@@ -1,0 +1,37 @@
+version: '3.8'
+
+services:
+  conan-ui:
+    build: .
+    container_name: conan-ui
+    ports:
+      - "3000:80"    # Frontend (nginx)
+      - "8000:8000"  # Backend API (direct access)
+    environment:
+      # Required: Conan remote configuration
+      - CUSTOM_REMOTE_NAME=${CUSTOM_REMOTE_NAME:-artifactory}
+      - CUSTOM_REMOTE_URL=${CUSTOM_REMOTE_URL:-https://your-artifactory.com/artifactory/api/conan/conan-repo}
+      - CUSTOM_REMOTE_USER=${CUSTOM_REMOTE_USER:-username}
+      - CUSTOM_REMOTE_PASSWORD=${CUSTOM_REMOTE_PASSWORD:-password}
+
+      # Optional configurations
+      - CORS_ORIGINS=${CORS_ORIGINS:-http://localhost:3000,http://127.0.0.1:3000}
+      - BACKEND_PORT=${BACKEND_PORT:-8000}
+      - FRONTEND_PORT=${FRONTEND_PORT:-80}
+    
+    volumes:
+      # Optional: Mount local Conan home to persist cache
+      - conan-cache:/app/.conan2
+    
+    restart: unless-stopped
+    
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+volumes:
+  conan-cache:
+    driver: local

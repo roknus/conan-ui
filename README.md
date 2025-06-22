@@ -33,6 +33,37 @@ A modern web application for visualizing and browsing Conan packages from local 
 
 ## 🚀 Quick Start
 
+### 🐳 Docker Deployment (Recommended)
+
+The easiest way to run Conan UI is using Docker, which bundles both frontend and backend:
+
+1. **Clone and configure**:
+   ```bash
+   git clone https://github.com/roknus/conan-ui.git
+   cd conan-ui
+   ```
+
+2. **Edit `.env.docker` with your Conan remote settings**:
+   ```env
+   CUSTOM_REMOTE_NAME=artifactory
+   CUSTOM_REMOTE_URL=https://your-artifactory.com/artifactory/api/conan/conan-repo
+   CUSTOM_REMOTE_USER=username
+   CUSTOM_REMOTE_PASSWORD=password
+   ```
+
+3. **Start with Docker Compose**:
+   ```bash
+   docker-compose up -d
+   ```
+
+4. **Access the application**:
+   - Frontend: http://localhost:3000
+   - Backend API: http://localhost:8000
+
+📋 **For detailed Docker deployment guide, see [DOCKER.md](DOCKER.md)**
+
+### 🛠️ Manual Development Setup
+
 ### Prerequisites
 - Python 3.8+
 - Node.js 16+

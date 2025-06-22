@@ -18,7 +18,7 @@ import os
 from dotenv import load_dotenv
 import logging
 from conan.api.conan_api import ConanAPI
-from conan.api.model import ListPattern, RecipeReference, PkgReference
+from conan.api.model import ListPattern, RecipeReference, PkgReference, Remote
 from conan.errors import ConanException
 from conan.internal.errors import NotFoundException
 
@@ -64,26 +64,32 @@ def initialize_conan_api():
         # Configure custom remote if credentials are provided
         if CUSTOM_REMOTE_URL and CUSTOM_REMOTE_USER and CUSTOM_REMOTE_PASSWORD:
             try:
+                
                 # Check if remote already exists
                 existing_remote = get_remote_by_name(conan_api, CUSTOM_REMOTE_NAME)
                 if not existing_remote:
-                    # Add the remote
-                    conan_api.remotes.add(CUSTOM_REMOTE_NAME, CUSTOM_REMOTE_URL)
+                    # Add the remote - create Remote object first
+                    remote = Remote(CUSTOM_REMOTE_NAME, CUSTOM_REMOTE_URL)
+                    conan_api.remotes.add(remote)
                     logger.info(f"Added remote '{CUSTOM_REMOTE_NAME}' at {CUSTOM_REMOTE_URL}")
                 elif existing_remote.url != CUSTOM_REMOTE_URL:
                     # Update URL if different
-                    conan_api.remotes.update(CUSTOM_REMOTE_NAME, CUSTOM_REMOTE_URL)
+                    conan_api.remotes.update(CUSTOM_REMOTE_NAME, url=CUSTOM_REMOTE_URL)
                     logger.info(f"Updated remote '{CUSTOM_REMOTE_NAME}' URL to {CUSTOM_REMOTE_URL}")
                 
-                # Set authentication
-                try:
-                    conan_api.remotes.auth(CUSTOM_REMOTE_NAME, CUSTOM_REMOTE_USER, CUSTOM_REMOTE_PASSWORD)
-                    logger.info(f"Configured authentication for remote '{CUSTOM_REMOTE_NAME}'")
-                except AttributeError:
-                    # Try alternative authentication method
-                    logger.warning(f"Authentication method not available for remote '{CUSTOM_REMOTE_NAME}' - manual configuration may be required")
-                except Exception as auth_error:
-                    logger.warning(f"Failed to set authentication for remote '{CUSTOM_REMOTE_NAME}': {auth_error}")
+                # Set authentication - get the remote object for authentication
+                remote_for_auth = get_remote_by_name(conan_api, CUSTOM_REMOTE_NAME)
+                if remote_for_auth:
+                    try:
+                        conan_api.remotes.user_login(remote_for_auth, CUSTOM_REMOTE_USER, CUSTOM_REMOTE_PASSWORD)
+                        logger.info(f"Configured authentication for remote '{CUSTOM_REMOTE_NAME}'")
+                    except AttributeError:
+                        # Try alternative authentication method
+                        logger.warning(f"Authentication method not available for remote '{CUSTOM_REMOTE_NAME}' - manual configuration may be required")
+                    except Exception as auth_error:
+                        logger.warning(f"Failed to set authentication for remote '{CUSTOM_REMOTE_NAME}': {auth_error}")
+                else:
+                    logger.warning(f"Could not retrieve remote '{CUSTOM_REMOTE_NAME}' for authentication")
                 
             except Exception as e:
                 logger.warning(f"Failed to configure custom remote: {e}")
