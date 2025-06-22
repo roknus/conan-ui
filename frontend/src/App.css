@@ -1,0 +1,293 @@
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen',
+    'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue',
+    sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+  min-height: 100vh;
+}
+
+.App {
+  min-height: 100vh;
+}
+
+.App-header {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
+  padding: 2rem 1rem;
+  text-align: center;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+}
+
+.App-header h1 {
+  margin: 0 0 0.5rem 0;
+  font-size: 2.5rem;
+  font-weight: 700;
+}
+
+.App-header p {
+  margin: 0;
+  font-size: 1.1rem;
+  opacity: 0.9;
+}
+
+.App-main {
+  min-height: calc(100vh - 200px);
+  padding-bottom: 2rem;
+}
+
+.error-message {
+  max-width: 800px;
+  margin: 2rem auto;
+  padding: 1rem;
+  background: #fee;
+  border: 2px solid #fcc;
+  border-radius: 8px;
+  text-align: center;
+}
+
+.error-message p {
+  color: #c33;
+  margin: 0;
+  font-weight: 600;
+}
+
+.loading {
+  text-align: center;
+  padding: 2rem;
+  color: #666;
+}
+
+.loading p {
+  font-size: 1.1rem;
+  margin: 0;
+}
+
+.config-message {
+  max-width: 800px;
+  margin: 2rem auto;
+  padding: 2rem;
+  background: linear-gradient(135deg, #fff3cd, #ffeaa7);
+  border: 2px solid #ffc107;
+  border-radius: 12px;
+  text-align: left;
+  box-shadow: 0 4px 12px rgba(255, 193, 7, 0.2);
+}
+
+.config-message h2 {
+  color: #856404;
+  margin-top: 0;
+  margin-bottom: 1rem;
+}
+
+.config-message p {
+  color: #856404;
+  margin-bottom: 1rem;
+  line-height: 1.6;
+}
+
+.config-message ol {
+  color: #856404;
+  margin-bottom: 1rem;
+  padding-left: 1.5rem;
+}
+
+.config-message li {
+  margin-bottom: 0.5rem;
+  line-height: 1.6;
+}
+
+.config-message code {
+  background: rgba(133, 100, 4, 0.1);
+  padding: 0.2rem 0.4rem;
+  border-radius: 4px;
+  font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
+  font-size: 0.9rem;
+}
+
+/* Breadcrumb styles */
+.breadcrumb {
+  padding: 0.5rem 1rem;
+  background: #f8f9fa;
+  border-radius: 8px;
+  margin-bottom: 1rem;
+  font-size: 0.9rem;
+}
+
+.breadcrumb-link {
+  background: none;
+  border: none;
+  color: #007bff;
+  cursor: pointer;
+  text-decoration: underline;
+  padding: 0;
+  font-size: inherit;
+}
+
+.breadcrumb-link:hover {
+  color: #0056b3;
+}
+
+/* Version list styles */
+.versions-list {
+  max-width: 800px;
+  margin: 0 auto;
+}
+
+.versions-list h2 {
+  color: #333;
+  margin-bottom: 1.5rem;
+  text-align: center;
+}
+
+.version-item {
+  background: white;
+  border: 1px solid #e1e8ed;
+  border-radius: 12px;
+  margin-bottom: 1rem;
+  transition: all 0.2s ease;
+}
+
+.version-item:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 25px rgba(0, 0, 0, 0.1);
+  border-color: #007bff;
+}
+
+.version-header {
+  padding: 1.5rem;
+  cursor: pointer;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.version-header h3 {
+  margin: 0;
+  color: #333;
+  font-size: 1.25rem;
+}
+
+.variant-count {
+  background: #e3f2fd;
+  color: #1976d2;
+  padding: 0.25rem 0.75rem;
+  border-radius: 20px;
+  font-size: 0.875rem;
+  font-weight: 500;
+}
+
+/* Variants list styles */
+.variants-list {
+  max-width: 800px;
+  margin: 0 auto;
+}
+
+.variants-list h2 {
+  color: #333;
+  margin-bottom: 1.5rem;
+  text-align: center;
+}
+
+.variant-item {
+  background: white;
+  border: 1px solid #e1e8ed;
+  border-radius: 12px;
+  margin-bottom: 1rem;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.variant-item:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 25px rgba(0, 0, 0, 0.1);
+  border-color: #007bff;
+}
+
+.variant-info {
+  padding: 1.5rem;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.user-channel {
+  font-family: 'Courier New', monospace;
+  background: #f8f9fa;
+  padding: 0.5rem 1rem;
+  border-radius: 6px;
+  color: #495057;
+  font-weight: 500;
+}
+
+.created-date {
+  color: #6c757d;
+  font-size: 0.875rem;
+}
+
+/* Remote selector styles */
+.remote-selector {
+  padding: 0.5rem 1rem;
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: 8px;
+  margin-bottom: 1rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+}
+
+.remote-selector label {
+  font-weight: 600;
+  color: white;
+  margin: 0;
+}
+
+.remote-dropdown {
+  padding: 0.5rem 1rem;
+  border: 2px solid rgba(255, 255, 255, 0.3);
+  border-radius: 6px;
+  background: rgba(255, 255, 255, 0.9);
+  color: #333;
+  font-size: 1rem;
+  min-width: 200px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.remote-dropdown:hover {
+  border-color: rgba(255, 255, 255, 0.5);
+  background: white;
+}
+
+.remote-dropdown:focus {
+  outline: none;
+  border-color: #4CAF50;
+  box-shadow: 0 0 0 2px rgba(76, 175, 80, 0.3);
+}
+
+.remote-dropdown option:disabled {
+  color: #999;
+  font-style: italic;
+}
+
+@media (max-width: 768px) {
+  .App-header h1 {
+    font-size: 2rem;
+  }
+
+  .App-header p {
+    font-size: 1rem;
+  }
+
+  .config-message {
+    margin: 1rem;
+    padding: 1.5rem;
+  }
+}

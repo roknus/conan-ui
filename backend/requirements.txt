@@ -1,0 +1,7 @@
+fastapi
+uvicorn[standard]
+python-dotenv
+pydantic
+python-multipart
+conan>=2.0.0
+pytest
