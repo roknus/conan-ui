@@ -2,6 +2,8 @@
 
 A modern web interface for browsing and searching your Conan packages. Get a clear overview of your remote repositories with an intuitive, responsive design.
 
+<img src="doc/package_binaries.png" alt="Package Binaries Screenshot" style="max-height: 400px;">
+
 ## 🚀 Getting Started
 
 ### Prerequisites
@@ -71,4 +73,4 @@ Contributions welcome! Please feel free to submit pull requests or create issues
 
 ## 📝 License
 
-MIT License - see [LICENSE](LICENSE) file for details.
+GPL 3.0 License - see [LICENSE](LICENSE) file for details.
