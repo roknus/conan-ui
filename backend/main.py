@@ -32,11 +32,19 @@ logger = logging.getLogger(__name__)
 # Configuration
 CONAN_HOME = os.getenv("CONAN_HOME")  # Optional: specify custom Conan home
 
+# Server configuration
+BACKEND_PORT = int(os.getenv("BACKEND_PORT", "8000"))
+# Backend always binds to all interfaces in container for nginx proxy access
+BACKEND_HOST = "0.0.0.0"
+
 # Custom remote configuration
 CUSTOM_REMOTE_NAME = os.getenv("CUSTOM_REMOTE_NAME")
 CUSTOM_REMOTE_URL = os.getenv("CUSTOM_REMOTE_URL")
 CUSTOM_REMOTE_USER = os.getenv("CUSTOM_REMOTE_USER")
 CUSTOM_REMOTE_PASSWORD = os.getenv("CUSTOM_REMOTE_PASSWORD")
+
+# CORS origins configuration
+CORS_ORIGINS = os.getenv("CORS_ORIGINS", "http://localhost:3000").split(",")
 
 # Available remotes: custom remote only
 AVAILABLE_REMOTES = [CUSTOM_REMOTE_NAME]
@@ -138,10 +146,9 @@ app = FastAPI(
 )
 
 # CORS configuration
-origins = os.getenv("CORS_ORIGINS", "http://localhost:3000").split(",")
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=origins,
+    allow_origins=CORS_ORIGINS,
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -873,8 +880,8 @@ if __name__ == "__main__":
     import uvicorn
     uvicorn.run(
         "main:app",
-        host="0.0.0.0",
-        port=8000,
+        host=BACKEND_HOST,
+        port=BACKEND_PORT,
         reload=True,
         log_level="info"
     )
