@@ -9,7 +9,6 @@ A modern web interface for browsing and searching your Conan packages. Get a cle
 ### Prerequisites
 - Python 3.8+ and pip
 - Node.js 16+ and npm
-- Conan 2.0+ installed
 
 ### Quick Setup
 
@@ -52,7 +51,7 @@ A modern web interface for browsing and searching your Conan packages. Get a cle
 
 For a one-command setup:
 
-1. **Configure environment** (create `.env.docker` file in root directory):
+1. **Configure environment** (create `.env` file in root directory):
    ```env
    CUSTOM_REMOTE_NAME=myremote
    CUSTOM_REMOTE_URL=https://your-conan-server.com/artifactory/api/conan/conan
