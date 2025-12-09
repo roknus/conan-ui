@@ -414,7 +414,7 @@ async def list_packages(
                 # Update with potentially newer version
                 existing = packages_dict[name]
                 if ref.version > existing.latest_version:
-                    existing.latest_version = ref.version
+                    existing.latest_version = str(ref.version)
         
         # Apply search filter if specified
         if q:
