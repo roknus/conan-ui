@@ -63,10 +63,6 @@ USER conanui
 
 # Environment variables with defaults
 ENV CONAN_HOME=/app/.conan2
-ENV CUSTOM_REMOTE_NAME=artifactory
-ENV CUSTOM_REMOTE_URL=https://your-artifactory.com/artifactory/api/conan/conan-repo
-ENV CUSTOM_REMOTE_USER=username
-ENV CUSTOM_REMOTE_PASSWORD=password
 ENV CORS_ORIGINS=http://localhost:3000,http://127.0.0.1:3000,http://localhost:80,http://127.0.0.1:80
 ENV BACKEND_PORT=8000
 ENV FRONTEND_PORT=80

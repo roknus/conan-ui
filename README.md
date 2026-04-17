@@ -18,19 +18,35 @@ A modern web interface for browsing and searching your Conan packages. Get a cle
    cd conan-ui
    ```
 
-2. **Configure environment** (create `.env` file in backend directory):
+2. **Configure repositories** (create `config.json` file):
    ```bash
-   cd backend
-   # Create .env file with your Conan remote settings
+   # Copy the example configuration
+   cp config.json.example config.json
+   # Edit config.json with your Conan repositories
    ```
    
-   Example `.env` content:
-   ```env
-   CUSTOM_REMOTE_NAME=myremote
-   CUSTOM_REMOTE_URL=https://your-conan-server.com/artifactory/api/conan/conan
-   CUSTOM_REMOTE_USER=username
-   CUSTOM_REMOTE_PASSWORD=password
+   Example `config.json`:
+   ```json
+   {
+     "repositories": [
+       {
+         "name": "artifactory",
+         "url": "https://your-artifactory.com/artifactory/api/conan/conan-repo",
+         "user": "username",
+         "password": "password",
+         "is_default": true
+       },
+       {
+         "name": "conan-center",
+         "url": "https://center.conan.io"
+       }
+     ]
+   }
    ```
+   
+   > 📚 See [REPOSITORIES.md](REPOSITORIES.md) for detailed configuration
+   > 
+   > 🔄 Upgrading from environment variables? See [MIGRATION.md](MIGRATION.md)
 
 3. **Start the backend**:
    ```bash
@@ -51,13 +67,33 @@ A modern web interface for browsing and searching your Conan packages. Get a cle
 
 For a one-command setup:
 
-1. **Configure environment** (create `.env` file in root directory):
-   ```env
-   CUSTOM_REMOTE_NAME=myremote
-   CUSTOM_REMOTE_URL=https://your-conan-server.com/artifactory/api/conan/conan
-   CUSTOM_REMOTE_USER=username
-   CUSTOM_REMOTE_PASSWORD=password
+1. **Configure repositories** (create `config.json` file in root directory):
+   ```bash
+   # Copy the example configuration
+   cp config.json.example config.json
+   # Edit config.json with your Conan repositories
    ```
+   
+   Example `config.json`:
+   ```json
+   {
+     "repositories": [
+       {
+         "name": "artifactory",
+         "url": "https://your-artifactory.com/artifactory/api/conan/conan-repo",
+         "user": "username",
+         "password": "password",
+         "is_default": true
+       }
+     ]
+   }
+   ```
+   
+   > 📚 See [REPOSITORIES.md](REPOSITORIES.md) for detailed configuration
+   > 
+   > 🔄 Upgrading from environment variables? See [MIGRATION.md](MIGRATION.md)
+   >
+   > 💡 In Docker, `config.json` is mounted to `/etc/conan-ui/config.json` in the container
 
 2. **Start with Docker Compose**:
    ```bash

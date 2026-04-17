@@ -17,6 +17,7 @@ from contextlib import asynccontextmanager
 import os
 from dotenv import load_dotenv
 import logging
+import json
 from conan.api.conan_api import ConanAPI
 from conan.api.model import ListPattern, RecipeReference, PkgReference, Remote
 from conan.errors import ConanException
@@ -37,18 +38,38 @@ BACKEND_PORT = int(os.getenv("BACKEND_PORT", "8000"))
 # Backend always binds to all interfaces in container for nginx proxy access
 BACKEND_HOST = "0.0.0.0"
 
-# Custom remote configuration
-CUSTOM_REMOTE_NAME = os.getenv("CUSTOM_REMOTE_NAME")
-CUSTOM_REMOTE_URL = os.getenv("CUSTOM_REMOTE_URL")
-CUSTOM_REMOTE_USER = os.getenv("CUSTOM_REMOTE_USER")
-CUSTOM_REMOTE_PASSWORD = os.getenv("CUSTOM_REMOTE_PASSWORD")
-
 # CORS origins configuration
 CORS_ORIGINS = os.getenv("CORS_ORIGINS", "http://localhost:3000").split(",")
 
-# Available remotes: custom remote only
-AVAILABLE_REMOTES = [CUSTOM_REMOTE_NAME]
-DEFAULT_REMOTE = CUSTOM_REMOTE_NAME  # Default to custom remote
+# Configuration file path
+# Default to /etc/conan-ui/config.json in containers, or config.json for local development
+CONFIG_FILE = os.getenv("CONAN_UI_CONFIG", "/etc/conan-ui/config.json")
+
+# Load repositories from config file
+def load_config():
+    """Load configuration from config.json file"""
+    config_path = CONFIG_FILE
+    
+    try:
+        with open(config_path, 'r') as f:
+            config = json.load(f)
+            repositories = config.get("repositories", [])
+            logger.info(f"Loaded {len(repositories)} repositories from {config_path}")
+            return repositories
+    except json.JSONDecodeError as e:
+        logger.error(f"Failed to parse config file '{config_path}': {e}")
+        return []
+    except Exception as e:
+        logger.error(f"Failed to load config file '{config_path}': {e}")
+        return []
+
+# Parse repositories configuration
+REPOSITORIES = load_config()
+
+# Extract available remote names and default remote
+AVAILABLE_REMOTES = [repo["name"] for repo in REPOSITORIES]
+DEFAULT_REMOTE = next((repo["name"] for repo in REPOSITORIES if repo.get("is_default")), 
+                      AVAILABLE_REMOTES[0] if AVAILABLE_REMOTES else None)
 
 # Global Conan API instance
 conan_api = None
@@ -62,47 +83,57 @@ def get_remote_by_name(conan_api: ConanAPI, name: str):
         return None
 
 def initialize_conan_api():
-    """Initialize Conan API and configure custom remote"""
+    """Initialize Conan API and configure all repositories"""
     global conan_api
     
     try:
         conan_api = ConanAPI(cache_folder=CONAN_HOME)
         logger.info("Conan API initialized successfully")
         
-        # Configure custom remote if credentials are provided
-        if CUSTOM_REMOTE_URL and CUSTOM_REMOTE_USER and CUSTOM_REMOTE_PASSWORD:
+        # Configure all repositories from the list
+        if not REPOSITORIES:
+            logger.warning("No repositories configured - application may have limited functionality")
+            return
+        
+        for repo_config in REPOSITORIES:
+            repo_name = repo_config.get("name")
+            repo_url = repo_config.get("url")
+            repo_user = repo_config.get("user")
+            repo_password = repo_config.get("password")
+            
+            if not repo_name or not repo_url:
+                logger.warning(f"Skipping invalid repository configuration: {repo_config}")
+                continue
+            
             try:
-                
                 # Check if remote already exists
-                existing_remote = get_remote_by_name(conan_api, CUSTOM_REMOTE_NAME)
+                existing_remote = get_remote_by_name(conan_api, repo_name)
                 if not existing_remote:
-                    # Add the remote - create Remote object first
-                    remote = Remote(CUSTOM_REMOTE_NAME, CUSTOM_REMOTE_URL)
+                    # Add the remote
+                    remote = Remote(repo_name, repo_url)
                     conan_api.remotes.add(remote)
-                    logger.info(f"Added remote '{CUSTOM_REMOTE_NAME}' at {CUSTOM_REMOTE_URL}")
-                elif existing_remote.url != CUSTOM_REMOTE_URL:
+                    logger.info(f"Added remote '{repo_name}' at {repo_url}")
+                elif existing_remote.url != repo_url:
                     # Update URL if different
-                    conan_api.remotes.update(CUSTOM_REMOTE_NAME, url=CUSTOM_REMOTE_URL)
-                    logger.info(f"Updated remote '{CUSTOM_REMOTE_NAME}' URL to {CUSTOM_REMOTE_URL}")
+                    conan_api.remotes.update(repo_name, url=repo_url)
+                    logger.info(f"Updated remote '{repo_name}' URL to {repo_url}")
                 
-                # Set authentication - get the remote object for authentication
-                remote_for_auth = get_remote_by_name(conan_api, CUSTOM_REMOTE_NAME)
-                if remote_for_auth:
-                    try:
-                        conan_api.remotes.user_login(remote_for_auth, CUSTOM_REMOTE_USER, CUSTOM_REMOTE_PASSWORD)
-                        logger.info(f"Configured authentication for remote '{CUSTOM_REMOTE_NAME}'")
-                    except AttributeError:
-                        # Try alternative authentication method
-                        logger.warning(f"Authentication method not available for remote '{CUSTOM_REMOTE_NAME}' - manual configuration may be required")
-                    except Exception as auth_error:
-                        logger.warning(f"Failed to set authentication for remote '{CUSTOM_REMOTE_NAME}': {auth_error}")
-                else:
-                    logger.warning(f"Could not retrieve remote '{CUSTOM_REMOTE_NAME}' for authentication")
+                # Set authentication if credentials are provided
+                if repo_user and repo_password:
+                    remote_for_auth = get_remote_by_name(conan_api, repo_name)
+                    if remote_for_auth:
+                        try:
+                            conan_api.remotes.user_login(remote_for_auth, repo_user, repo_password)
+                            logger.info(f"Configured authentication for remote '{repo_name}'")
+                        except AttributeError:
+                            logger.warning(f"Authentication method not available for remote '{repo_name}' - manual configuration may be required")
+                        except Exception as auth_error:
+                            logger.warning(f"Failed to set authentication for remote '{repo_name}': {auth_error}")
+                    else:
+                        logger.warning(f"Could not retrieve remote '{repo_name}' for authentication")
                 
             except Exception as e:
-                logger.warning(f"Failed to configure custom remote: {e}")
-        else:
-            logger.warning("Custom remote credentials not fully configured - some features may not work")
+                logger.warning(f"Failed to configure remote '{repo_name}': {e}")
             
     except Exception as e:
         logger.error(f"Failed to initialize Conan API: {e}")
@@ -374,7 +405,7 @@ async def list_packages(
     remote_name: str = Query(..., description="Remote name to search"),
     q: str = Query("", description="Search query for package names"),
     page: int = Query(1, ge=1, description="Page number"),
-    per_page: int = Query(20, ge=1, le=100, description="Items per page"),
+    per_page: int = Query(20, ge=1, le=1000, description="Items per page"),
     conan_api: ConanAPI = Depends(get_conan_api)
 ):
     """List Conan packages grouped by name

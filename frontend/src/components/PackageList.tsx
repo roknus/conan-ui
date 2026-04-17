@@ -6,9 +6,13 @@ import './PackageList.css';
 interface PackageListProps {
     packages: ConanPackageInfo[];
     onPackageSelect: (pkg: ConanPackageInfo) => void;
+    currentPage?: number;
+    totalPackages?: number;
+    perPage?: number;
+    onPageChange?: (page: number) => void;
 }
 
-const PackageList: React.FC<PackageListProps> = ({ packages, onPackageSelect }) => {
+const PackageList: React.FC<PackageListProps> = ({ packages, onPackageSelect, currentPage = 1, totalPackages, perPage = 20, onPageChange }) => {
     if (packages.length === 0) {
         return (
             <div className="package-list-container">
@@ -19,10 +23,13 @@ const PackageList: React.FC<PackageListProps> = ({ packages, onPackageSelect }) 
             </div>
         );    }
 
+    const total = totalPackages ?? packages.length;
+    const totalPages = Math.ceil(total / perPage);
+
     return (
         <div className="package-list-container">
             <div className="package-list-header">
-                <h2>📦 Found {packages.length} package{packages.length !== 1 ? 's' : ''}</h2>
+                <h2>📦 Found {total} package{total !== 1 ? 's' : ''}</h2>
             </div>
             <div className="package-list">
                 {packages.map((pkg) => (
@@ -55,6 +62,49 @@ const PackageList: React.FC<PackageListProps> = ({ packages, onPackageSelect }) 
                     </div>
                 ))}
             </div>
+            {totalPages > 1 && onPageChange && (
+                <div className="pagination">
+                    <button
+                        className="pagination-btn"
+                        disabled={currentPage <= 1}
+                        onClick={() => onPageChange(currentPage - 1)}
+                    >
+                        ← Previous
+                    </button>
+                    {Array.from({ length: totalPages }, (_, i) => i + 1)
+                        .filter(page => {
+                            // Show first, last, and pages near current
+                            return page === 1 || page === totalPages || Math.abs(page - currentPage) <= 2;
+                        })
+                        .reduce<(number | string)[]>((acc, page, idx, arr) => {
+                            if (idx > 0 && page - (arr[idx - 1] as number) > 1) {
+                                acc.push('...');
+                            }
+                            acc.push(page);
+                            return acc;
+                        }, [])
+                        .map((item, idx) =>
+                            typeof item === 'string' ? (
+                                <span key={`ellipsis-${idx}`} className="pagination-ellipsis">…</span>
+                            ) : (
+                                <button
+                                    key={item}
+                                    className={`pagination-btn ${item === currentPage ? 'active' : ''}`}
+                                    onClick={() => onPageChange(item)}
+                                >
+                                    {item}
+                                </button>
+                            )
+                        )}
+                    <button
+                        className="pagination-btn"
+                        disabled={currentPage >= totalPages}
+                        onClick={() => onPageChange(currentPage + 1)}
+                    >
+                        Next →
+                    </button>
+                </div>
+            )}
         </div>
     );
 };
