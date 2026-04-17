@@ -205,6 +205,83 @@ describe('PackageList', () => {
         expect(onPackageSelect).toHaveBeenCalledWith(packages[1]);
     });
 
+    it('renders long package names with proper CSS classes for overflow handling', () => {
+        const longNamePackages: ConanPackageInfo[] = [
+            {
+                name: 'ecs_multiplayer_framework_with_extremely_long_package_name',
+                latest_version: '0.0.0-master+b068a385',
+                total_versions: 10,
+                created: Date.now() / 1000,
+            },
+        ];
+        render(
+            <PackageList
+                packages={longNamePackages}
+                onPackageSelect={onPackageSelect}
+            />
+        );
+        const nameElement = screen.getByText('ecs_multiplayer_framework_with_extremely_long_package_name');
+        expect(nameElement).toBeInTheDocument();
+        expect(nameElement).toHaveClass('package-name');
+        // Verify the name is inside a flex-wrapping header
+        const header = nameElement.closest('.package-header');
+        expect(header).toBeInTheDocument();
+    });
+
+    it('renders package stats alongside long package names', () => {
+        const longNamePackages: ConanPackageInfo[] = [
+            {
+                name: 'a_very_long_conan_package_name_that_should_not_break_the_layout',
+                latest_version: '2.0.0',
+                total_versions: 5,
+                created: Date.now() / 1000,
+            },
+        ];
+        render(
+            <PackageList
+                packages={longNamePackages}
+                onPackageSelect={onPackageSelect}
+            />
+        );
+        const nameElement = screen.getByText('a_very_long_conan_package_name_that_should_not_break_the_layout');
+        expect(nameElement).toBeInTheDocument();
+        // Stats should still be visible
+        expect(screen.getByText('5 versions')).toBeInTheDocument();
+        expect(screen.getByText('Latest: 2.0.0')).toBeInTheDocument();
+        // Both name and stats should be inside the same card
+        const card = nameElement.closest('.package-card');
+        expect(card).toBeInTheDocument();
+        expect(card).toContainElement(screen.getByText('5 versions'));
+    });
+
+    it('renders multiple packages with long names without breaking', () => {
+        const longNamePackages: ConanPackageInfo[] = [
+            {
+                name: 'short',
+                latest_version: '1.0.0',
+                total_versions: 1,
+                created: Date.now() / 1000,
+            },
+            {
+                name: 'ecs_protobuf_plugin_with_extra_long_suffix_name',
+                latest_version: '0.0.0-master+80363cca',
+                total_versions: 23,
+                created: Date.now() / 1000,
+            },
+        ];
+        render(
+            <PackageList
+                packages={longNamePackages}
+                onPackageSelect={onPackageSelect}
+            />
+        );
+        expect(screen.getByText('short')).toBeInTheDocument();
+        expect(screen.getByText('ecs_protobuf_plugin_with_extra_long_suffix_name')).toBeInTheDocument();
+        // All cards should be present
+        const cards = document.querySelectorAll('.package-card');
+        expect(cards).toHaveLength(2);
+    });
+
     it('does not render pagination when onPageChange is not provided', () => {
         const packages = makePackages(20);
         render(
