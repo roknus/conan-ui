@@ -119,6 +119,9 @@ function PackageListRoute() {
   }>>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [currentPage, setCurrentPage] = useState(1);
+  const [totalPackages, setTotalPackages] = useState(0);
+  const [perPage] = useState(20);
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
   
@@ -151,11 +154,32 @@ function PackageListRoute() {
     }
 
     try {
-      const result = await listPackages(remoteName, query);
+      const result = await listPackages(remoteName, query, 1, perPage);
       setPackages(result.packages);
+      setTotalPackages(result.total);
+      setCurrentPage(1);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Search failed');
       setPackages([]);
+      setTotalPackages(0);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handlePageChange = async (page: number) => {
+    if (!remoteName) return;
+    
+    setLoading(true);
+    setError(null);
+    
+    try {
+      const result = await listPackages(remoteName, searchQuery, page, perPage);
+      setPackages(result.packages);
+      setTotalPackages(result.total);
+      setCurrentPage(page);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Page load failed');
     } finally {
       setLoading(false);
     }
@@ -211,6 +235,10 @@ function PackageListRoute() {
           <PackageList 
             packages={packages} 
             onPackageSelect={handlePackageSelect}
+            currentPage={currentPage}
+            totalPackages={totalPackages}
+            perPage={perPage}
+            onPageChange={handlePageChange}
           />
         )}
       </main>
