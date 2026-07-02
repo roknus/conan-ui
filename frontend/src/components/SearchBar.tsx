@@ -43,7 +43,7 @@ const SearchBar: React.FC<SearchBarProps> = ({ onSearch, initialValue = '', init
                     )}
                 </div>
                 <button type="submit" className="search-button">
-                    🔍 Search
+                    Search
                 </button>
             </form>
         </div>

@@ -10,18 +10,44 @@ interface PackageListProps {
     totalPackages?: number;
     perPage?: number;
     onPageChange?: (page: number) => void;
+    highlight?: string;
 }
 
-const PackageList: React.FC<PackageListProps> = ({ packages, onPackageSelect, currentPage = 1, totalPackages, perPage = 20, onPageChange }) => {
+// Highlight the matched portion of the package name so it's easy to spot.
+const highlightMatch = (name: string, query?: string): React.ReactNode => {
+    const q = query?.trim();
+    if (!q) return name;
+    const idx = name.toLowerCase().indexOf(q.toLowerCase());
+    if (idx === -1) return name;
+    return (
+        <>
+            {name.slice(0, idx)}
+            <mark className="pkg-match">{name.slice(idx, idx + q.length)}</mark>
+            {name.slice(idx + q.length)}
+        </>
+    );
+};
+
+const PackageList: React.FC<PackageListProps> = ({
+    packages,
+    onPackageSelect,
+    currentPage = 1,
+    totalPackages,
+    perPage = 20,
+    onPageChange,
+    highlight,
+}) => {
     if (packages.length === 0) {
         return (
             <div className="package-list-container">
                 <div className="empty-state">
-                    <p>📦 No packages found</p>
-                    <p>Try a different search term or check your remote connection</p>
+                    <div className="empty-icon">📦</div>
+                    <p className="empty-title">No packages found</p>
+                    <p className="empty-hint">Try a different search term or check your remote connection</p>
                 </div>
             </div>
-        );    }
+        );
+    }
 
     const total = totalPackages ?? packages.length;
     const totalPages = Math.ceil(total / perPage);
@@ -29,39 +55,41 @@ const PackageList: React.FC<PackageListProps> = ({ packages, onPackageSelect, cu
     return (
         <div className="package-list-container">
             <div className="package-list-header">
-                <h2>📦 Found {total} package{total !== 1 ? 's' : ''}</h2>
+                <span className="result-count">
+                    {total.toLocaleString()} package{total !== 1 ? 's' : ''}
+                </span>
             </div>
-            <div className="package-list">
+
+            <div className="package-grid">
                 {packages.map((pkg) => (
-                    <div
+                    <button
                         key={pkg.name}
+                        type="button"
                         className="package-card"
                         onClick={() => onPackageSelect(pkg)}
                     >
-                        <div className="package-header">
-                            <h3 className="package-name">{pkg.name}</h3>
-                            <div className="package-stats">
-                                <span className="version-count">
-                                    {pkg.total_versions} version{pkg.total_versions !== 1 ? 's' : ''}
+                        <span className="pkg-name" title={pkg.name}>
+                            {highlightMatch(pkg.name, highlight)}
+                        </span>
+                        <div className="package-card__meta">
+                            <span className="version-count">
+                                {pkg.total_versions} version{pkg.total_versions !== 1 ? 's' : ''}
+                            </span>
+                            {pkg.latest_version && (
+                                <span className="latest-version" title={pkg.latest_version}>
+                                    {pkg.latest_version}
                                 </span>
-                                {pkg.latest_version && (
-                                    <span className="latest-version">
-                                        Latest: {pkg.latest_version}
-                                    </span>
-                                )}
-                            </div>
-                        </div>
-                        <div className="package-metadata">
-                            {pkg.created && (
-                                <div className="metadata-item">
-                                    <span className="metadata-label">Created:</span>
-                                    <span className="metadata-value">{formatDate(pkg.created)}</span>
-                                </div>
                             )}
                         </div>
-                    </div>
+                        {pkg.created && (
+                            <div className="package-card__created">
+                                {formatDate(pkg.created)}
+                            </div>
+                        )}
+                    </button>
                 ))}
             </div>
+
             {totalPages > 1 && onPageChange && (
                 <div className="pagination">
                     <button
@@ -69,11 +97,10 @@ const PackageList: React.FC<PackageListProps> = ({ packages, onPackageSelect, cu
                         disabled={currentPage <= 1}
                         onClick={() => onPageChange(currentPage - 1)}
                     >
-                        ← Previous
+                        ← Prev
                     </button>
                     {Array.from({ length: totalPages }, (_, i) => i + 1)
                         .filter(page => {
-                            // Show first, last, and pages near current
                             return page === 1 || page === totalPages || Math.abs(page - currentPage) <= 2;
                         })
                         .reduce<(number | string)[]>((acc, page, idx, arr) => {

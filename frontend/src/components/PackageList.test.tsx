@@ -8,7 +8,8 @@ function makePackages(count: number): ConanPackageInfo[] {
     return Array.from({ length: count }, (_, i) => ({
         name: `package-${i + 1}`,
         latest_version: '1.0.0',
-        total_versions: 1,
+        // Use a count that won't collide with page-number text in queries
+        total_versions: 99,
         created: Date.now() / 1000,
     }));
 }
@@ -38,8 +39,8 @@ describe('PackageList', () => {
                 onPageChange={onPageChange}
             />
         );
-        expect(screen.getByText(/Found 5 packages/)).toBeInTheDocument();
-        expect(screen.queryByText('← Previous')).not.toBeInTheDocument();
+        expect(screen.getByText('5 packages')).toBeInTheDocument();
+        expect(screen.queryByText('← Prev')).not.toBeInTheDocument();
     });
 
     it('shows total from totalPackages prop, not packages.length', () => {
@@ -55,7 +56,7 @@ describe('PackageList', () => {
             />
         );
         // Should show total (55), not the current page count (20)
-        expect(screen.getByText(/Found 55 packages/)).toBeInTheDocument();
+        expect(screen.getByText('55 packages')).toBeInTheDocument();
     });
 
     it('renders pagination controls when totalPackages > perPage', () => {
@@ -70,7 +71,7 @@ describe('PackageList', () => {
                 onPageChange={onPageChange}
             />
         );
-        expect(screen.getByText('← Previous')).toBeInTheDocument();
+        expect(screen.getByText('← Prev')).toBeInTheDocument();
         expect(screen.getByText('Next →')).toBeInTheDocument();
         // 3 pages: 1, 2, 3
         expect(screen.getByText('1')).toBeInTheDocument();
@@ -90,7 +91,7 @@ describe('PackageList', () => {
                 onPageChange={onPageChange}
             />
         );
-        expect(screen.getByText('← Previous')).toBeDisabled();
+        expect(screen.getByText('← Prev')).toBeDisabled();
         expect(screen.getByText('Next →')).not.toBeDisabled();
     });
 
@@ -107,7 +108,7 @@ describe('PackageList', () => {
             />
         );
         expect(screen.getByText('Next →')).toBeDisabled();
-        expect(screen.getByText('← Previous')).not.toBeDisabled();
+        expect(screen.getByText('← Prev')).not.toBeDisabled();
     });
 
     it('calls onPageChange when clicking Next', () => {
@@ -138,7 +139,7 @@ describe('PackageList', () => {
                 onPageChange={onPageChange}
             />
         );
-        fireEvent.click(screen.getByText('← Previous'));
+        fireEvent.click(screen.getByText('← Prev'));
         expect(onPageChange).toHaveBeenCalledWith(1);
     });
 
@@ -193,7 +194,7 @@ describe('PackageList', () => {
         expect(ellipses.length).toBeGreaterThan(0);
     });
 
-    it('calls onPackageSelect when clicking a package card', () => {
+    it('calls onPackageSelect when clicking a package row', () => {
         const packages = makePackages(3);
         render(
             <PackageList
@@ -205,7 +206,7 @@ describe('PackageList', () => {
         expect(onPackageSelect).toHaveBeenCalledWith(packages[1]);
     });
 
-    it('renders long package names with proper CSS classes for overflow handling', () => {
+    it('renders long package names on a single non-wrapping line', () => {
         const longNamePackages: ConanPackageInfo[] = [
             {
                 name: 'ecs_multiplayer_framework_with_extremely_long_package_name',
@@ -222,14 +223,15 @@ describe('PackageList', () => {
         );
         const nameElement = screen.getByText('ecs_multiplayer_framework_with_extremely_long_package_name');
         expect(nameElement).toBeInTheDocument();
-        expect(nameElement).toHaveClass('package-name');
-        // Verify the name is inside a flex-wrapping header
-        const header = nameElement.closest('.package-header');
-        expect(header).toBeInTheDocument();
+        // The name cell carries the class responsible for single-line ellipsis truncation
+        expect(nameElement).toHaveClass('pkg-name');
+        // And lives inside a clickable card
+        const card = nameElement.closest('.package-card');
+        expect(card).toBeInTheDocument();
     });
 
-    it('renders package stats alongside long package names', () => {
-        const longNamePackages: ConanPackageInfo[] = [
+    it('renders latest version and versions count alongside the name', () => {
+        const packages: ConanPackageInfo[] = [
             {
                 name: 'a_very_long_conan_package_name_that_should_not_break_the_layout',
                 latest_version: '2.0.0',
@@ -239,22 +241,39 @@ describe('PackageList', () => {
         ];
         render(
             <PackageList
-                packages={longNamePackages}
+                packages={packages}
                 onPackageSelect={onPackageSelect}
             />
         );
         const nameElement = screen.getByText('a_very_long_conan_package_name_that_should_not_break_the_layout');
         expect(nameElement).toBeInTheDocument();
-        // Stats should still be visible
+        // Version count badge and latest version are shown in the card meta
         expect(screen.getByText('5 versions')).toBeInTheDocument();
-        expect(screen.getByText('Latest: 2.0.0')).toBeInTheDocument();
-        // Both name and stats should be inside the same card
-        const card = nameElement.closest('.package-card');
-        expect(card).toBeInTheDocument();
-        expect(card).toContainElement(screen.getByText('5 versions'));
+        expect(screen.getByText('2.0.0')).toBeInTheDocument();
     });
 
-    it('renders multiple packages with long names without breaking', () => {
+    it('highlights the matched portion of the name when a query is given', () => {
+        const packages: ConanPackageInfo[] = [
+            {
+                name: 'boost',
+                latest_version: '1.83.0',
+                total_versions: 3,
+                created: Date.now() / 1000,
+            },
+        ];
+        const { container } = render(
+            <PackageList
+                packages={packages}
+                onPackageSelect={onPackageSelect}
+                highlight="oo"
+            />
+        );
+        const mark = container.querySelector('mark.pkg-match');
+        expect(mark).toBeInTheDocument();
+        expect(mark).toHaveTextContent('oo');
+    });
+
+    it('renders multiple packages with long names as separate cards', () => {
         const longNamePackages: ConanPackageInfo[] = [
             {
                 name: 'short',
@@ -277,7 +296,7 @@ describe('PackageList', () => {
         );
         expect(screen.getByText('short')).toBeInTheDocument();
         expect(screen.getByText('ecs_protobuf_plugin_with_extra_long_suffix_name')).toBeInTheDocument();
-        // All cards should be present
+        // One card per package
         const cards = document.querySelectorAll('.package-card');
         expect(cards).toHaveLength(2);
     });
@@ -293,6 +312,6 @@ describe('PackageList', () => {
                 currentPage={1}
             />
         );
-        expect(screen.queryByText('← Previous')).not.toBeInTheDocument();
+        expect(screen.queryByText('← Prev')).not.toBeInTheDocument();
     });
 });
