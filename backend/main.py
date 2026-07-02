@@ -418,34 +418,38 @@ async def list_packages(
         validate_remote_name(conan_api, remote_name)
         remote = get_remote_by_name(conan_api, remote_name)
         
-        # Create search pattern - use * to get all packages, or add query filter
-        search_pattern = f"*{q}*:*" if q else "*:*"
-        pattern = ListPattern(search_pattern, rrev=None, prev=None)
-          # Get package list using Conan API
-        package_list = conan_api.list.select(pattern, remote=remote)
-        
-        # Group packages by name and collect metadata
+        # The list view only needs recipe name/version metadata. Use a single
+        # recipe search instead of list.select("*:*"), which enumerates every
+        # binary (latest revision + package configurations, ~2 requests PER recipe)
+        # and times out on remotes with many packages. Binary details are fetched
+        # lazily per-package by the detail endpoints below.
+        # NOTE: search.recipes returns references without revisions, so it can't be
+        # read back via PackagesList.refs() (that only yields refs with revisions).
+        search_query = f"*{q}*" if q else "*"
+        refs = conan_api.search.recipes(search_query, remote=remote)
+
+        # Group recipe references by name in one pass, tracking newest version + count.
         packages_dict = {}
-        for ref, recipe_bundle in package_list.refs().items():
-            #ref = RecipeReference.loads(ref_str)
+        latest_version_obj = {}
+        for ref in refs:
             name = ref.name
-            
+
             if name not in packages_dict:
-                # Count versions for this package
-                version_count = len([r_version for r_version, _ in package_list.refs().items() 
-                                   if r_version.name == name])
-                
                 packages_dict[name] = ConanPackageInfo(
                     name=name,
-                    latest_version=str(ref.version),  # This will be the most recent one found
-                    total_versions=version_count,
-                    created=ref.timestamp
+                    latest_version=str(ref.version),
+                    total_versions=1,
+                    created=ref.timestamp,
                 )
+                latest_version_obj[name] = ref.version
             else:
-                # Update with potentially newer version
-                existing = packages_dict[name]
-                if ref.version > existing.latest_version:
-                    existing.latest_version = str(ref.version)
+                info = packages_dict[name]
+                info.total_versions += 1
+                # Compare Version objects (not strings) to find the newest.
+                if ref.version > latest_version_obj[name]:
+                    latest_version_obj[name] = ref.version
+                    info.latest_version = str(ref.version)
+                    info.created = ref.timestamp
         
         # Apply search filter if specified
         if q:
