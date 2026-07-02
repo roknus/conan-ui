@@ -1,0 +1,22 @@
+[project]
+name = "conan-ui-backend"
+version = "0.1.0"
+description = "FastAPI backend for the Conan UI package browser"
+authors = [{ name = "roknus" }]
+requires-python = ">=3.11,<4.0"
+dependencies = [
+    "fastapi",
+    "uvicorn[standard]",
+    "python-dotenv",
+    "pydantic",
+    "python-multipart",
+    "conan==2.17.0",
+]
+
+[tool.poetry]
+# This is an application, not an installable library — don't try to package it.
+package-mode = false
+
+[tool.poetry.group.dev.dependencies]
+pytest = "*"
+ruff = "*"

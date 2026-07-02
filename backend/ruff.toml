@@ -1,0 +1,10 @@
+# Ruff config for the FastAPI backend.
+# Run:  cd backend && ruff check .      (lint)
+#       cd backend && ruff format .     (format)
+target-version = "py311"
+line-length = 100
+
+[lint]
+# pycodestyle errors/warnings, Pyflakes, isort, pyupgrade, flake8-bugbear.
+select = ["E", "W", "F", "I", "UP", "B"]
+ignore = ["E501"]  # line length handled by the formatter, not enforced as a lint error

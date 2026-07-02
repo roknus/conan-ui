@@ -1,7 +1,0 @@
-fastapi
-uvicorn[standard]
-python-dotenv
-pydantic
-python-multipart
-conan==2.17.0
-pytest

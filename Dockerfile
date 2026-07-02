@@ -33,9 +33,12 @@ WORKDIR /app
 # Create non-root user for security
 RUN groupadd -r conanui && useradd -r -g conanui conanui
 
-# Copy backend requirements and install Python dependencies
-COPY backend/requirements.txt ./backend/
-RUN pip install --no-cache-dir -r backend/requirements.txt
+# Install Poetry and backend Python dependencies (main group only, no dev tools)
+COPY backend/pyproject.toml backend/poetry.lock ./backend/
+RUN pip install --no-cache-dir poetry && \
+    cd backend && \
+    poetry config virtualenvs.create false && \
+    poetry install --only main --no-root --no-interaction
 
 # Copy backend source
 COPY backend/ ./backend/

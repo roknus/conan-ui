@@ -11,6 +11,12 @@ Thumbs.db
 venv/
 env/
 
+# Python caches / tooling
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.ruff_cache/
+
 # Node modules
 node_modules/
 
