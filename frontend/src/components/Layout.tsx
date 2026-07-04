@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import Brand from './Brand';
 import SearchBar from './SearchBar';
+import AdminMenu from './AdminMenu';
 import { getRepositories } from '../services/api';
 import { paths } from '../routes/paths';
 
@@ -54,24 +55,27 @@ const Layout: React.FC<LayoutProps> = ({ remoteName, searchQuery = '', children 
             <header className="App-header list-header">
                 <Brand />
                 <SearchBar onSearch={handleSearch} initialQuery={searchQuery} />
-                <div className="remote-selector">
-                    <label htmlFor="remote-select">Repository: </label>
-                    <select
-                        id="remote-select"
-                        value={remoteName || ''}
-                        onChange={(e) => handleRemoteChange(e.target.value)}
-                        className="remote-dropdown"
-                    >
-                        {/* Keep the current remote selectable before the list loads */}
-                        {remoteName && !knownRemote && (
-                            <option value={remoteName}>{remoteName}</option>
-                        )}
-                        {repositories.map((repo) => (
-                            <option key={repo.name} value={repo.name} disabled={!repo.available}>
-                                {repo.name} {repo.is_default ? '(default)' : ''} {!repo.available ? '(unavailable)' : ''}
-                            </option>
-                        ))}
-                    </select>
+                <div className="header-right">
+                    <div className="remote-selector">
+                        <label htmlFor="remote-select">Repository: </label>
+                        <select
+                            id="remote-select"
+                            value={remoteName || ''}
+                            onChange={(e) => handleRemoteChange(e.target.value)}
+                            className="remote-dropdown"
+                        >
+                            {/* Keep the current remote selectable before the list loads */}
+                            {remoteName && !knownRemote && (
+                                <option value={remoteName}>{remoteName}</option>
+                            )}
+                            {repositories.map((repo) => (
+                                <option key={repo.name} value={repo.name} disabled={!repo.available}>
+                                    {repo.name} {repo.is_default ? '(default)' : ''} {!repo.available ? '(unavailable)' : ''}
+                                </option>
+                            ))}
+                        </select>
+                    </div>
+                    {remoteName && <AdminMenu remoteName={remoteName} />}
                 </div>
             </header>
             <main className="App-main">
