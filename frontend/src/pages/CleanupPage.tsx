@@ -64,7 +64,7 @@ const CleanupPage: React.FC = () => {
     const [onlyPrerelease, setOnlyPrerelease] = useState(false);
     const [olderThanDays, setOlderThanDays] = useState('');
     const [keepAtLeast, setKeepAtLeast] = useState('');
-    const [keepScope, setKeepScope] = useState<CleanupScope>('recipe_revision');
+    const [keepScope, setKeepScope] = useState<CleanupScope>('name');
     const [deletionsOnly, setDeletionsOnly] = useState(false);
 
     // Which group keys are expanded (collapsed by default to keep the list short)
@@ -320,8 +320,7 @@ const CleanupPage: React.FC = () => {
                 <div className="cleanup-head">
                     <h2>Cleanup package binaries</h2>
                     <p className="cleanup-sub">
-                        Remove old binaries on <code>{remoteName}</code>. Binaries are ranked
-                        oldest-first by upload time.
+                        Remove binaries on <code>{remoteName}</code>.
                     </p>
                 </div>
 
@@ -334,7 +333,7 @@ const CleanupPage: React.FC = () => {
                                 id="cl-pattern"
                                 value={pattern}
                                 onChange={(e) => setPattern(e.target.value)}
-                                placeholder="* or admin (substring) or zlib/1.3@user/channel"
+                                placeholder="*"
                             />
                             <label className="cleanup-checkbox">
                                 <input
