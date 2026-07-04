@@ -491,7 +491,7 @@ async def get_package_binaries(
                         settings=settings,
                         options=pkg_config.get("options", {}),
                         requires=pkg_config.get("requires", []),
-                        created=ref.timestamp,
+                        created=pref.timestamp,
                         path=str(pref)
                     )
                     binaries.append(binary)
