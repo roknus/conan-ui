@@ -35,9 +35,12 @@ const Layout: React.FC<LayoutProps> = ({ searchQuery = '', children }) => {
         navigate({ pathname: location.pathname, search: params.toString() });
     };
 
-    // Switching the remote goes to its package list, keeping the search query
+    // Switching the remote swaps ?repo in place, keeping the current page and its
+    // other params — so changing repository just changes context, not the page.
     const handleRemoteChange = (newRemoteName: string) => {
-        navigate(paths.remote(newRemoteName, searchQuery || undefined));
+        const params = new URLSearchParams(location.search);
+        params.set('repo', newRemoteName);
+        navigate({ pathname: location.pathname, search: params.toString() });
     };
 
     const repoItems: DropdownItem[] = repositories.map((repo) => ({
