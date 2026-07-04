@@ -1,14 +1,15 @@
 import React from 'react';
-import { useNavigate, useParams } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
+import { useRemote } from '../context/RemoteContext';
 import { paths } from '../routes/paths';
 
 // Clickable app brand — returns to the current remote's package list
 const Brand: React.FC = () => {
     const navigate = useNavigate();
-    const { remoteName } = useParams<{ remoteName?: string }>();
+    const { remote } = useRemote();
 
     const handleClick = () => {
-        navigate(remoteName ? paths.remote(remoteName) : paths.root());
+        navigate(paths.root(remote));
     };
 
     return (

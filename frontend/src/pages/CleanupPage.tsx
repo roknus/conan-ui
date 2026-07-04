@@ -1,8 +1,8 @@
 import React, { useRef, useState } from 'react';
-import { useParams } from 'react-router-dom';
 import Layout from '../components/Layout';
 import { formatDate } from '../utils/dateUtils';
 import { streamCleanupPreview, streamCleanupExecute } from '../services/api';
+import { useRemote } from '../context/RemoteContext';
 import { CleanupScope, CleanupRequest, CleanupGroup } from '../types/conan';
 import './CleanupPage.css';
 
@@ -56,7 +56,7 @@ const deriveSummary = (slots: Slot[]) => {
 // Cleanup tool: filter binaries on a remote, preview a plan (each package fills
 // in progressively), then confirm to remove (with live progress).
 const CleanupPage: React.FC = () => {
-    const { remoteName } = useParams<{ remoteName: string }>();
+    const { remote: remoteName } = useRemote();
 
     // Filter + rules
     const [pattern, setPattern] = useState('*');
@@ -315,7 +315,7 @@ const CleanupPage: React.FC = () => {
     };
 
     return (
-        <Layout remoteName={remoteName}>
+        <Layout>
             <div className="cleanup">
                 <div className="cleanup-head">
                     <h2>Cleanup package binaries</h2>

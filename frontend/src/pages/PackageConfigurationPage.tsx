@@ -4,10 +4,12 @@ import Layout from '../components/Layout';
 import PackageDetail from '../components/PackageDetail';
 import { ConanPackageDetail } from '../types/conan';
 import { getPackageConfiguration } from '../services/api';
+import { useRemote } from '../context/RemoteContext';
 import { paths } from '../routes/paths';
 
 const PackageConfigurationPage: React.FC = () => {
-    const { remoteName, packageName } = useParams<{ remoteName: string; packageName: string }>();
+    const { remote: remoteName } = useRemote();
+    const { packageName } = useParams<{ packageName: string }>();
     const [packageDetail, setPackageDetail] = useState<ConanPackageDetail | null>(null);
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
@@ -55,7 +57,7 @@ const PackageConfigurationPage: React.FC = () => {
     }, [remoteName, packageName, version, searchParams]);
 
     return (
-        <Layout remoteName={remoteName}>
+        <Layout>
             {loading && <div className="loading">Loading...</div>}
             {error && <div className="error">Error: {error}</div>}
             {!loading && !error && packageDetail && (

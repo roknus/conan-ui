@@ -1,15 +1,16 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { useNavigate, useParams, useSearchParams } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import Layout from '../components/Layout';
 import PackageList from '../components/PackageList';
 import { ConanPackageInfo } from '../types/conan';
 import { listPackages } from '../services/api';
+import { useRemote } from '../context/RemoteContext';
 import { paths } from '../routes/paths';
 
 const PER_PAGE = 20;
 
 const PackageListPage: React.FC = () => {
-    const { remoteName } = useParams<{ remoteName: string }>();
+    const { remote: remoteName } = useRemote();
     const [searchParams] = useSearchParams();
     const navigate = useNavigate();
 
@@ -55,7 +56,7 @@ const PackageListPage: React.FC = () => {
     };
 
     return (
-        <Layout remoteName={remoteName} searchQuery={searchQuery}>
+        <Layout searchQuery={searchQuery}>
             {loading && <div className="loading">Loading...</div>}
             {error && <div className="error">Error: {error}</div>}
             {!loading && !error && (

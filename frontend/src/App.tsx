@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Routes, Route } from 'react-router-dom';
 import './App.css';
 import Brand from './components/Brand';
-import RemoteSelectionPage from './pages/RemoteSelectionPage';
+import { RemoteProvider } from './context/RemoteContext';
 import PackageListPage from './pages/PackageListPage';
 import PackageBinariesPage from './pages/PackageBinariesPage';
 import PackageConfigurationPage from './pages/PackageConfigurationPage';
@@ -51,14 +51,16 @@ function App() {
   }
 
   return (
-    <Routes>
-      <Route path="/" element={<RemoteSelectionPage />} />
-      <Route path="/:remoteName" element={<PackageListPage />} />
-      {/* Static segment declared before the dynamic :packageName route */}
-      <Route path="/:remoteName/cleanup" element={<CleanupPage />} />
-      <Route path="/:remoteName/:packageName" element={<PackageBinariesPage />} />
-      <Route path="/:remoteName/:packageName/configuration" element={<PackageConfigurationPage />} />
-    </Routes>
+    <RemoteProvider>
+      <Routes>
+        {/* Remote is a ?repo= query param; the path holds only package context */}
+        <Route path="/" element={<PackageListPage />} />
+        {/* Static segment declared before the dynamic :packageName route */}
+        <Route path="/cleanup" element={<CleanupPage />} />
+        <Route path="/:packageName" element={<PackageBinariesPage />} />
+        <Route path="/:packageName/configuration" element={<PackageConfigurationPage />} />
+      </Routes>
+    </RemoteProvider>
   );
 }
 
