@@ -7,6 +7,14 @@ import { getPackageBinaries, getPackageVersions } from '../services/api';
 import { useRemote } from '../context/RemoteContext';
 import { paths } from '../routes/paths';
 
+// Placeholder shown before the first binaries fetch resolves, so the filter
+// dropdowns can render (as empty option lists) instead of blanking the page.
+const EMPTY_REVISION_INFO: ConanRevisionInfo = {
+    recipe_revisions: [],
+    users: [],
+    channels: [],
+};
+
 const PackageBinariesPage: React.FC = () => {
     const { remote: remoteName } = useRemote();
     const { packageName } = useParams<{ packageName: string }>();
@@ -191,15 +199,18 @@ const PackageBinariesPage: React.FC = () => {
 
     return (
         <Layout>
-            {loading && <div className="loading">Loading...</div>}
             {error && <div className="error">Error: {error}</div>}
-            {!loading && !error && revisionInfo && (
+            {/* Always render the chrome (header, tabs, filters) so it's visible
+                immediately — even on the first load before revisionInfo arrives.
+                The `loading` prop spinners only the binaries list underneath.
+                Filter dropdowns fall back to empty option lists until data loads. */}
+            {!error && (
                 <PackageBinaries
                     remoteName={remoteName!}
                     packageName={packageName!}
                     version={version}
                     binaries={binaries}
-                    revisionInfo={revisionInfo}
+                    revisionInfo={revisionInfo ?? EMPTY_REVISION_INFO}
                     currentFilters={binaryFilters}
                     onFiltersChange={handleBinaryFiltersChange}
                     onBinarySelect={handleBinarySelect}

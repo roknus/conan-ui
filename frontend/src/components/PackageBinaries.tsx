@@ -244,10 +244,6 @@ const PackageBinaries: React.FC<PackageBinariesProps> = ({
     };
 
     const renderBinariesTab = () => {
-        if (loading) {
-            return <div className="loading">Loading package binaries...</div>;
-        }
-
         return (
             <>
                 <div className="filters-container">
@@ -400,7 +396,9 @@ const PackageBinaries: React.FC<PackageBinariesProps> = ({
                     </div>
                 </div>
                 <div className="binaries-list">
-                    {binaries.length === 0 ? (
+                    {loading ? (
+                        <div className="loading">Loading package binaries...</div>
+                    ) : binaries.length === 0 ? (
                         <div className="no-binaries">
                             No package binaries found with current filters.
                         </div>
@@ -508,9 +506,11 @@ const PackageBinaries: React.FC<PackageBinariesProps> = ({
                     )}
                 </div>
 
-                <div className="binaries-summary">
-                    Total binaries: {binaries.length}
-                </div>
+                {!loading && (
+                    <div className="binaries-summary">
+                        Total binaries: {binaries.length}
+                    </div>
+                )}
             </>
         );
     };
