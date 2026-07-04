@@ -464,7 +464,7 @@ const CleanupPage: React.FC = () => {
                                     className="cleanup-delete-btn"
                                     onClick={openDeleteModal}
                                 >
-                                    🗑 Delete {summary.to_delete} binaries (
+                                    Delete {summary.to_delete} binaries (
                                     {formatBytes(summary.reclaim_size)})…
                                 </button>
                             </div>
