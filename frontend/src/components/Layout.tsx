@@ -1,54 +1,41 @@
-import React, { useEffect, useState } from 'react';
+import React from 'react';
 import { useNavigate } from 'react-router-dom';
 import Brand from './Brand';
 import SearchBar from './SearchBar';
 import AdminMenu from './AdminMenu';
-import { getRepositories } from '../services/api';
+import Dropdown, { DropdownItem } from './Dropdown';
+import { useRemote } from '../context/RemoteContext';
 import { paths } from '../routes/paths';
 
-interface Repository {
-    name: string;
-    url: string;
-    available: boolean;
-    description: string;
-    is_default?: boolean;
-}
-
 interface LayoutProps {
-    /** Remote in context (drives the selector value + where search navigates) */
-    remoteName?: string;
     /** Current search query, used to seed the search box */
     searchQuery?: string;
     children: React.ReactNode;
 }
 
 // Static top bar (brand + centered search + remote selector) shared by every
-// remote-scoped page, plus the main content area.
-const Layout: React.FC<LayoutProps> = ({ remoteName, searchQuery = '', children }) => {
+// remote-scoped page, plus the main content area. The active remote comes from
+// RemoteContext (the ?repo= query param, or the default).
+const Layout: React.FC<LayoutProps> = ({ searchQuery = '', children }) => {
     const navigate = useNavigate();
-    const [repositories, setRepositories] = useState<Repository[]>([]);
-
-    useEffect(() => {
-        let cancelled = false;
-        getRepositories()
-            .then((result) => {
-                if (!cancelled) setRepositories(result.repositories);
-            })
-            .catch((err) => console.error('Failed to load repositories:', err));
-        return () => { cancelled = true; };
-    }, []);
+    const { remote, repositories } = useRemote();
 
     // Searching from any page lands on the current remote's package list
     const handleSearch = (query: string) => {
-        if (!remoteName) return;
-        navigate(paths.remote(remoteName, query || undefined));
+        navigate(paths.remote(remote, query || undefined));
     };
 
+    // Switching the remote goes to its package list, keeping the search query
     const handleRemoteChange = (newRemoteName: string) => {
         navigate(paths.remote(newRemoteName, searchQuery || undefined));
     };
 
-    const knownRemote = repositories.some((repo) => repo.name === remoteName);
+    const repoItems: DropdownItem[] = repositories.map((repo) => ({
+        value: repo.name,
+        label: `${repo.name}${repo.is_default ? ' (default)' : ''}${!repo.available ? ' (unavailable)' : ''}`,
+        disabled: !repo.available,
+        active: repo.name === remote,
+    }));
 
     return (
         <div className="App">
@@ -57,25 +44,17 @@ const Layout: React.FC<LayoutProps> = ({ remoteName, searchQuery = '', children 
                 <SearchBar onSearch={handleSearch} initialQuery={searchQuery} />
                 <div className="header-right">
                     <div className="remote-selector">
-                        <label htmlFor="remote-select">Repository: </label>
-                        <select
-                            id="remote-select"
-                            value={remoteName || ''}
-                            onChange={(e) => handleRemoteChange(e.target.value)}
-                            className="remote-dropdown"
-                        >
-                            {/* Keep the current remote selectable before the list loads */}
-                            {remoteName && !knownRemote && (
-                                <option value={remoteName}>{remoteName}</option>
-                            )}
-                            {repositories.map((repo) => (
-                                <option key={repo.name} value={repo.name} disabled={!repo.available}>
-                                    {repo.name} {repo.is_default ? '(default)' : ''} {!repo.available ? '(unavailable)' : ''}
-                                </option>
-                            ))}
-                        </select>
+                        <span className="remote-selector-label">Repository</span>
+                        <Dropdown
+                            variant="select"
+                            ariaLabel="Repository"
+                            align="left"
+                            trigger={remote || 'Select…'}
+                            items={repoItems}
+                            onSelect={handleRemoteChange}
+                        />
                     </div>
-                    {remoteName && <AdminMenu remoteName={remoteName} />}
+                    {remote && <AdminMenu />}
                 </div>
             </header>
             <main className="App-main">
