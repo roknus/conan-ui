@@ -591,3 +591,10 @@
         grid-template-columns: 1fr;
     }
 }
+
+/* Inline status icons in result banner and modal headings */
+.cleanup-result h3 svg,
+.cleanup-modal h3 svg {
+    vertical-align: -0.125em;
+    margin-right: 0.4rem;
+}

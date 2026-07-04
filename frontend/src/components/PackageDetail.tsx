@@ -1,6 +1,7 @@
 import React from 'react';
 import { ConanPackageDetail } from '../types/conan';
 import { formatDate } from '../utils/dateUtils';
+import { FaArrowLeft, FaClipboardList, FaAlignLeft, FaCircleInfo, FaCubes, FaGear, FaSliders, FaFolder } from './icons';
 import './PackageDetail.css';
 
 interface PackageDetailProps {
@@ -14,7 +15,7 @@ const PackageDetail: React.FC<PackageDetailProps> = ({ package: pkg, onBack, onC
         if (onClose) onClose();
         if (onBack) onBack();    };
     
-    const renderObjectAsTable = (obj: Record<string, any>, title: string) => {
+    const renderObjectAsTable = (obj: Record<string, any>, title: React.ReactNode) => {
         const entries = Object.entries(obj);
         if (entries.length === 0) return null;
 
@@ -39,7 +40,7 @@ const PackageDetail: React.FC<PackageDetailProps> = ({ package: pkg, onBack, onC
         <div className="package-detail-container">
             <div className="detail-header">
                 <button onClick={handleClose} className="back-button">
-                    ← Back to list
+                    <FaArrowLeft /> Back to list
                 </button>
                 <div className="package-title">
                     <h1>{pkg.name}</h1>
@@ -51,7 +52,7 @@ const PackageDetail: React.FC<PackageDetailProps> = ({ package: pkg, onBack, onC
                 <div className="detail-main">
                     {/* Basic Information */}
                     <div className="detail-section">
-                        <h2>📋 Basic Information</h2>
+                        <h2><FaClipboardList /> Basic Information</h2>
                         <div className="info-grid">
                             <div className="info-item">
                                 <span className="info-label">Name:</span>
@@ -83,14 +84,14 @@ const PackageDetail: React.FC<PackageDetailProps> = ({ package: pkg, onBack, onC
                     {/* Description */}
                     {pkg.description && (
                         <div className="detail-section">
-                            <h2>📝 Description</h2>
+                            <h2><FaAlignLeft /> Description</h2>
                             <p className="description">{pkg.description}</p>
                         </div>
                     )}
 
                     {/* Additional Info */}
                     <div className="detail-section">
-                        <h2>ℹ️ Additional Information</h2>
+                        <h2><FaCircleInfo /> Additional Information</h2>
                         <div className="info-grid">
                             {pkg.author && (
                                 <div className="info-item">
@@ -120,7 +121,7 @@ const PackageDetail: React.FC<PackageDetailProps> = ({ package: pkg, onBack, onC
                     {/* Requirements */}
                     {pkg.requires.length > 0 && (
                         <div className="detail-section">
-                            <h2>📦 Requirements</h2>
+                            <h2><FaCubes /> Requirements</h2>
                             <div className="requirements-list">
                                 {pkg.requires.map((req, index) => (
                                     <span key={index} className="requirement-badge">
@@ -132,14 +133,14 @@ const PackageDetail: React.FC<PackageDetailProps> = ({ package: pkg, onBack, onC
                     )}
 
                     {/* Settings */}
-                    {renderObjectAsTable(pkg.settings, '⚙️ Settings')}
+                    {renderObjectAsTable(pkg.settings, <><FaGear /> Settings</>)}
 
                     {/* Options */}
-                    {renderObjectAsTable(pkg.options, '🔧 Options')}
+                    {renderObjectAsTable(pkg.options, <><FaSliders /> Options</>)}
 
                     {/* Path Information */}
                     <div className="detail-section">
-                        <h2>📁 Path Information</h2>
+                        <h2><FaFolder /> Path Information</h2>
                         <div className="path-info">
                             <code>{pkg.path}</code>
                         </div>

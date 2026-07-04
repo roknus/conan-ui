@@ -1,4 +1,5 @@
 import React, { useEffect, useRef, useState } from 'react';
+import { FaCheck } from './icons';
 import './Dropdown.css';
 
 export interface DropdownItem {
@@ -199,7 +200,7 @@ const Dropdown: React.FC<DropdownProps> = ({
                         >
                             {isSelect && (
                                 <span className="dropdown-check" aria-hidden="true">
-                                    {item.active ? '✓' : ''}
+                                    {item.active ? <FaCheck /> : ''}
                                 </span>
                             )}
                             <span className="dropdown-item-label">{item.label}</span>

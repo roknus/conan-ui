@@ -537,6 +537,20 @@
     border-color: var(--accent-border);
 }
 
+/* Platform logo shown before the OS value in a setting tag */
+.setting-tag .os-icon {
+    margin-right: 0.3rem;
+    vertical-align: -0.12em;
+}
+
+/* Inline icons in section headings and filter labels */
+.filter-section-title svg,
+.filter-group label svg {
+    vertical-align: -0.125em;
+    margin-right: 0.4rem;
+    opacity: 0.85;
+}
+
 .option-tag {
     background: rgba(247, 120, 186, 0.12);
     color: var(--pink);

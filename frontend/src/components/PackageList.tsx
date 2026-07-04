@@ -1,6 +1,7 @@
 import React from 'react';
 import { ConanPackageInfo } from '../types/conan';
 import { formatDate } from '../utils/dateUtils';
+import { FaBox, FaArrowLeft, FaArrowRight } from './icons';
 import './PackageList.css';
 
 interface PackageListProps {
@@ -41,7 +42,7 @@ const PackageList: React.FC<PackageListProps> = ({
         return (
             <div className="package-list-container">
                 <div className="empty-state">
-                    <div className="empty-icon">📦</div>
+                    <div className="empty-icon"><FaBox /></div>
                     <p className="empty-title">No packages found</p>
                     <p className="empty-hint">Try a different search term or check your remote connection</p>
                 </div>
@@ -97,7 +98,7 @@ const PackageList: React.FC<PackageListProps> = ({
                         disabled={currentPage <= 1}
                         onClick={() => onPageChange(currentPage - 1)}
                     >
-                        ← Prev
+                        <FaArrowLeft /> Prev
                     </button>
                     {Array.from({ length: totalPages }, (_, i) => i + 1)
                         .filter(page => {
@@ -128,7 +129,7 @@ const PackageList: React.FC<PackageListProps> = ({
                         disabled={currentPage >= totalPages}
                         onClick={() => onPageChange(currentPage + 1)}
                     >
-                        Next →
+                        Next <FaArrowRight />
                     </button>
                 </div>
             )}

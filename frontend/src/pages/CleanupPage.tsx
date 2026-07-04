@@ -4,6 +4,7 @@ import { formatDate } from '../utils/dateUtils';
 import { streamCleanupPreview, streamCleanupExecute } from '../services/api';
 import { useRemote } from '../context/RemoteContext';
 import { CleanupScope, CleanupRequest, CleanupGroup } from '../types/conan';
+import { FaCircleCheck, FaCircleStop, FaTriangleExclamation } from '../components/icons';
 import './CleanupPage.css';
 
 const SCOPE_LABELS: Record<CleanupScope, string> = {
@@ -434,7 +435,7 @@ const CleanupPage: React.FC = () => {
                 {result && (
                     <div className={`cleanup-result ${result.cancelled ? 'cancelled' : ''}`}>
                         <h3>
-                            {result.cancelled ? '⏹ Stopped' : '✅ Removed'} {result.total_deleted}{' '}
+                            {result.cancelled ? <><FaCircleStop /> Stopped</> : <><FaCircleCheck /> Removed</>} {result.total_deleted}{' '}
                             binaries — reclaimed {formatBytes(result.reclaimed_size)}
                         </h3>
                         {result.failed.length > 0 && (
@@ -567,7 +568,7 @@ const CleanupPage: React.FC = () => {
 
                             {modalPhase === 'done' && result && (
                                 <>
-                                    <h3>✅ Removed {result.total_deleted} binaries</h3>
+                                    <h3><FaCircleCheck /> Removed {result.total_deleted} binaries</h3>
                                     <p>Reclaimed <b>{formatBytes(result.reclaimed_size)}</b>.</p>
                                     {result.failed.length > 0 && (
                                         <div className="cleanup-failed">
@@ -584,7 +585,7 @@ const CleanupPage: React.FC = () => {
 
                             {modalPhase === 'cancelled' && result && (
                                 <>
-                                    <h3>⏹ Stopped</h3>
+                                    <h3><FaCircleStop /> Stopped</h3>
                                     <p>
                                         Deleted {result.total_deleted} binaries before cancelling —
                                         reclaimed <b>{formatBytes(result.reclaimed_size)}</b>. The rest were
@@ -600,7 +601,7 @@ const CleanupPage: React.FC = () => {
 
                             {modalPhase === 'error' && (
                                 <>
-                                    <h3>⚠️ Couldn't complete</h3>
+                                    <h3><FaTriangleExclamation /> Couldn't complete</h3>
                                     <p className="cleanup-modal-error">{modalError}</p>
                                     <div className="cleanup-modal-actions">
                                         <button className="cleanup-cancel-btn" onClick={closeModal}>

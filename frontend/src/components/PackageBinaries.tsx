@@ -3,6 +3,8 @@ import './PackageBinaries.css';
 import { ConanPackageBinary, ConanRevisionInfo, ConanBinaryFilters, ConanFilterOptions, ConanPackageVersion } from '../types/conan';
 import { formatDate } from '../utils/dateUtils';
 import { getPackageVersions } from '../services/api';
+import OsIcon from './OsIcon';
+import { FaBox, FaGear, FaDesktop, FaMicrochip, FaWrench, FaCode, FaHashtag } from './icons';
 
 interface PackageBinariesProps {
     remoteName: string;
@@ -249,7 +251,7 @@ const PackageBinaries: React.FC<PackageBinariesProps> = ({
                 <div className="filters-container">
                     {/* Package Reference Filters */}
                     <div className="filters-section package-filters">
-                        <h3 className="filter-section-title">📦 Package Reference Filters</h3>
+                        <h3 className="filter-section-title"><FaBox /> Package Reference Filters</h3>
                         <div className="filter-controls">
                             <div className="filter-group">
                                 <label htmlFor="revision-select">Recipe Revision:</label>
@@ -304,12 +306,12 @@ const PackageBinaries: React.FC<PackageBinariesProps> = ({
 
                     {/* Build Settings Filters */}
                     <div className="filters-section settings-filters">
-                        <h3 className="filter-section-title">⚙️ Build Settings Filters</h3>
+                        <h3 className="filter-section-title"><FaGear /> Build Settings Filters</h3>
 
                         {/* Platform Settings Row */}
                         <div className="filter-row platform-settings">
                             <div className="filter-group">
-                                <label htmlFor="os-select">🖥️ Operating System:</label>
+                                <label htmlFor="os-select"><FaDesktop /> Operating System:</label>
                                 <select
                                     id="os-select"
                                     value={localFilters.os || ''}
@@ -325,7 +327,7 @@ const PackageBinaries: React.FC<PackageBinariesProps> = ({
                             </div>
 
                             <div className="filter-group">
-                                <label htmlFor="arch-select">🏗️ Architecture:</label>
+                                <label htmlFor="arch-select"><FaMicrochip /> Architecture:</label>
                                 <select
                                     id="arch-select"
                                     value={localFilters.arch || ''}
@@ -341,7 +343,7 @@ const PackageBinaries: React.FC<PackageBinariesProps> = ({
                             </div>
 
                             <div className="filter-group">
-                                <label htmlFor="build-type-select">🔧 Build Type:</label>
+                                <label htmlFor="build-type-select"><FaWrench /> Build Type:</label>
                                 <select
                                     id="build-type-select"
                                     value={localFilters.build_type || ''}
@@ -360,7 +362,7 @@ const PackageBinaries: React.FC<PackageBinariesProps> = ({
                         {/* Compilation Settings Row */}
                         <div className="filter-row compilation-settings">
                             <div className="filter-group">
-                                <label htmlFor="compiler-select">⚙️ Compiler:</label>
+                                <label htmlFor="compiler-select"><FaCode /> Compiler:</label>
                                 <select
                                     id="compiler-select"
                                     value={localFilters.compiler || ''}
@@ -377,7 +379,7 @@ const PackageBinaries: React.FC<PackageBinariesProps> = ({
 
                             {localFilters.compiler && allFilterOptions.compiler_version.length > 0 && (
                                 <div className="filter-group">
-                                    <label htmlFor="compiler-version-select">🔢 Compiler Version:</label>
+                                    <label htmlFor="compiler-version-select"><FaHashtag /> Compiler Version:</label>
                                     <select
                                         id="compiler-version-select"
                                         value={localFilters.compiler_version || ''}
@@ -459,8 +461,9 @@ const PackageBinaries: React.FC<PackageBinariesProps> = ({
                                                             <span
                                                                 key={`setting-${idx}`}
                                                                 className="config-tag setting-tag"
-                                                                title={`⚙️ Setting: ${item.key} = ${item.value}`}
+                                                                title={`Setting: ${item.key} = ${item.value}`}
                                                             >
+                                                                {item.key === 'os' && <OsIcon os={item.value} className="os-icon" />}
                                                                 {item.value}
                                                             </span>
                                                         ))}
@@ -474,7 +477,7 @@ const PackageBinaries: React.FC<PackageBinariesProps> = ({
                                                             <span
                                                                 key={`option-${idx}`}
                                                                 className="config-tag option-tag"
-                                                                title={`🔧 Option: ${item.key} = ${item.value}`}
+                                                                title={`Option: ${item.key} = ${item.value}`}
                                                             >
                                                                 {item.value}
                                                             </span>
@@ -489,7 +492,7 @@ const PackageBinaries: React.FC<PackageBinariesProps> = ({
                                                             <span
                                                                 key={`require-${idx}`}
                                                                 className="config-tag require-tag"
-                                                                title={`📦 Dependency: ${item.value}`}
+                                                                title={`Dependency: ${item.value}`}
                                                             >
                                                                 {item.value}
                                                             </span>

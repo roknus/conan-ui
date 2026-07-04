@@ -19,13 +19,14 @@
     align-items: center;
 }
 
-.search-input-container::before {
-    content: '🔍';
+.search-icon {
     position: absolute;
     left: 0.75rem;
     font-size: 0.85rem;
     opacity: 0.55;
     pointer-events: none;
+    display: flex;
+    align-items: center;
 }
 
 .search-input {
@@ -57,10 +58,13 @@
     cursor: pointer;
     padding: 0.15rem;
     border-radius: 4px;
-    font-size: 0.7rem;
+    font-size: 0.9rem;
     line-height: 1;
     opacity: 0.6;
     transition: opacity 0.15s ease;
+    display: flex;
+    align-items: center;
+    color: inherit;
 }
 
 .clear-button:hover {

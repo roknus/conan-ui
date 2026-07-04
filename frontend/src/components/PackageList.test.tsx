@@ -40,7 +40,7 @@ describe('PackageList', () => {
             />
         );
         expect(screen.getByText('5 packages')).toBeInTheDocument();
-        expect(screen.queryByText('← Prev')).not.toBeInTheDocument();
+        expect(screen.queryByText('Prev')).not.toBeInTheDocument();
     });
 
     it('shows total from totalPackages prop, not packages.length', () => {
@@ -71,8 +71,8 @@ describe('PackageList', () => {
                 onPageChange={onPageChange}
             />
         );
-        expect(screen.getByText('← Prev')).toBeInTheDocument();
-        expect(screen.getByText('Next →')).toBeInTheDocument();
+        expect(screen.getByText('Prev')).toBeInTheDocument();
+        expect(screen.getByText('Next')).toBeInTheDocument();
         // 3 pages: 1, 2, 3
         expect(screen.getByText('1')).toBeInTheDocument();
         expect(screen.getByText('2')).toBeInTheDocument();
@@ -91,8 +91,8 @@ describe('PackageList', () => {
                 onPageChange={onPageChange}
             />
         );
-        expect(screen.getByText('← Prev')).toBeDisabled();
-        expect(screen.getByText('Next →')).not.toBeDisabled();
+        expect(screen.getByText('Prev')).toBeDisabled();
+        expect(screen.getByText('Next')).not.toBeDisabled();
     });
 
     it('disables Next button on last page', () => {
@@ -107,8 +107,8 @@ describe('PackageList', () => {
                 onPageChange={onPageChange}
             />
         );
-        expect(screen.getByText('Next →')).toBeDisabled();
-        expect(screen.getByText('← Prev')).not.toBeDisabled();
+        expect(screen.getByText('Next')).toBeDisabled();
+        expect(screen.getByText('Prev')).not.toBeDisabled();
     });
 
     it('calls onPageChange when clicking Next', () => {
@@ -123,7 +123,7 @@ describe('PackageList', () => {
                 onPageChange={onPageChange}
             />
         );
-        fireEvent.click(screen.getByText('Next →'));
+        fireEvent.click(screen.getByText('Next'));
         expect(onPageChange).toHaveBeenCalledWith(2);
     });
 
@@ -139,7 +139,7 @@ describe('PackageList', () => {
                 onPageChange={onPageChange}
             />
         );
-        fireEvent.click(screen.getByText('← Prev'));
+        fireEvent.click(screen.getByText('Prev'));
         expect(onPageChange).toHaveBeenCalledWith(1);
     });
 
@@ -312,6 +312,6 @@ describe('PackageList', () => {
                 currentPage={1}
             />
         );
-        expect(screen.queryByText('← Prev')).not.toBeInTheDocument();
+        expect(screen.queryByText('Prev')).not.toBeInTheDocument();
     });
 });

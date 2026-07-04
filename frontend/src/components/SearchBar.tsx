@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { FaMagnifyingGlass, FaXmark } from './icons';
 import './SearchBar.css';
 
 interface SearchBarProps {
@@ -30,6 +31,7 @@ const SearchBar: React.FC<SearchBarProps> = ({ onSearch, onClear, initialValue =
         <div className="search-bar">
             <form onSubmit={handleSubmit} className="search-form">
                 <div className="search-input-container">
+                    <FaMagnifyingGlass className="search-icon" aria-hidden />
                     <input
                         type="text"
                         value={query}
@@ -44,7 +46,7 @@ const SearchBar: React.FC<SearchBarProps> = ({ onSearch, onClear, initialValue =
                             className="clear-button"
                             aria-label="Clear search"
                         >
-                            ❌
+                            <FaXmark />
                         </button>
                     )}
                 </div>

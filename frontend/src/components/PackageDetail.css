@@ -26,6 +26,11 @@
     color: var(--text);
 }
 
+.back-button svg {
+    vertical-align: -0.125em;
+    margin-right: 0.35rem;
+}
+
 .package-title {
     display: flex;
     align-items: center;
