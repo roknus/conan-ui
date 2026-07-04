@@ -1,5 +1,5 @@
 import React from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import Brand from './Brand';
 import SearchBar from './SearchBar';
 import AdminMenu from './AdminMenu';
@@ -18,11 +18,21 @@ interface LayoutProps {
 // RemoteContext (the ?repo= query param, or the default).
 const Layout: React.FC<LayoutProps> = ({ searchQuery = '', children }) => {
     const navigate = useNavigate();
+    const location = useLocation();
     const { remote, repositories } = useRemote();
 
     // Searching from any page lands on the current remote's package list
     const handleSearch = (query: string) => {
         navigate(paths.remote(remote, query || undefined));
+    };
+
+    // Clearing removes the ?q filter from the current page rather than
+    // navigating to the list — so it doesn't yank you off a package page.
+    const handleClear = () => {
+        const params = new URLSearchParams(location.search);
+        if (!params.has('q')) return; // nothing applied; the box is already cleared locally
+        params.delete('q');
+        navigate({ pathname: location.pathname, search: params.toString() });
     };
 
     // Switching the remote goes to its package list, keeping the search query
@@ -41,7 +51,7 @@ const Layout: React.FC<LayoutProps> = ({ searchQuery = '', children }) => {
         <div className="App">
             <header className="App-header list-header">
                 <Brand />
-                <SearchBar onSearch={handleSearch} initialQuery={searchQuery} />
+                <SearchBar onSearch={handleSearch} onClear={handleClear} initialQuery={searchQuery} />
                 <div className="header-right">
                     <div className="remote-selector">
                         <span className="remote-selector-label">Repository</span>
