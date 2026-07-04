@@ -37,4 +37,4 @@ tmp/
 temp/
 
 # GitHub Copilot instructions (optional - remove this line if you want to include it)
-.github/
+.github/copilot-instructions.md
