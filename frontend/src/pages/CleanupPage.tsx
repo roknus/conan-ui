@@ -80,7 +80,6 @@ const CleanupPage: React.FC = () => {
     // Delete modal state
     const [modalPhase, setModalPhase] = useState<ModalPhase>(null);
     const [del, setDel] = useState<DelState>({ done: 0, total: 0, reclaimed: 0 });
-    const [delFailed, setDelFailed] = useState<Array<{ key: string; error: string }>>([]);
     const [modalError, setModalError] = useState<string | null>(null);
 
     const previewAbort = useRef<AbortController | null>(null);
@@ -167,14 +166,12 @@ const CleanupPage: React.FC = () => {
 
     const openDeleteModal = () => {
         setModalError(null);
-        setDelFailed([]);
         setDel({ done: 0, total: summary.to_delete, reclaimed: 0 });
         setModalPhase('confirm');
     };
 
     const confirmDelete = async () => {
         setModalError(null);
-        setDelFailed([]);
         setScan({ done: 0, total: 0, current: '' });
         setModalPhase('verifying');
 
@@ -205,7 +202,6 @@ const CleanupPage: React.FC = () => {
                         break;
                     case 'failed':
                         failures.push({ key: ev.key ?? '?', error: ev.error ?? 'error' });
-                        setDelFailed([...failures]);
                         break;
                     case 'done':
                         setResult({
@@ -554,39 +550,18 @@ const CleanupPage: React.FC = () => {
                                 </>
                             )}
 
-                            {modalPhase === 'verifying' && (
+                            {(modalPhase === 'verifying' || modalPhase === 'deleting') && (
                                 <>
-                                    <h3>Verifying plan…</h3>
-                                    <ProgressBar pct={scanPct} />
+                                    <h3>Deleting…</h3>
+                                    <ProgressBar pct={delPct} />
                                     <p className="cleanup-modal-status">
-                                        Re-scanning {scan.total ? `${scan.done} / ${scan.total}` : ''}{' '}
-                                        <span className="dim mono">{scan.current}</span>
+                                        {del.done} / {del.total} deleted
                                     </p>
                                     <div className="cleanup-modal-actions">
                                         <button className="cleanup-cancel-btn" onClick={cancelDelete}>
                                             Cancel
                                         </button>
                                     </div>
-                                </>
-                            )}
-
-                            {modalPhase === 'deleting' && (
-                                <>
-                                    <h3>Deleting…</h3>
-                                    <ProgressBar pct={delPct} />
-                                    <p className="cleanup-modal-status">
-                                        {del.done} / {del.total} deleted — reclaimed{' '}
-                                        {formatBytes(del.reclaimed)}
-                                        {delFailed.length > 0 && <span className="dim"> · {delFailed.length} failed</span>}
-                                    </p>
-                                    <div className="cleanup-modal-actions">
-                                        <button className="cleanup-delete-btn" onClick={cancelDelete}>
-                                            Cancel
-                                        </button>
-                                    </div>
-                                    <p className="cleanup-modal-note">
-                                        Cancelling stops further deletions; already-deleted binaries stay removed.
-                                    </p>
                                 </>
                             )}
 
