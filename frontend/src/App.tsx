@@ -6,6 +6,7 @@ import RemoteSelectionPage from './pages/RemoteSelectionPage';
 import PackageListPage from './pages/PackageListPage';
 import PackageBinariesPage from './pages/PackageBinariesPage';
 import PackageConfigurationPage from './pages/PackageConfigurationPage';
+import CleanupPage from './pages/CleanupPage';
 import { checkConfiguration } from './services/api';
 
 function ConfigurationErrorPage() {
@@ -53,6 +54,8 @@ function App() {
     <Routes>
       <Route path="/" element={<RemoteSelectionPage />} />
       <Route path="/:remoteName" element={<PackageListPage />} />
+      {/* Static segment declared before the dynamic :packageName route */}
+      <Route path="/:remoteName/cleanup" element={<CleanupPage />} />
       <Route path="/:remoteName/:packageName" element={<PackageBinariesPage />} />
       <Route path="/:remoteName/:packageName/configuration" element={<PackageConfigurationPage />} />
     </Routes>

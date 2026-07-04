@@ -3,7 +3,11 @@ import {
     ConanPackageDetail,
     PackagesListResponse,
     PackageVersionsResponse,
-    PackageBinariesResponse
+    PackageBinariesResponse,
+    CleanupRequest,
+    CleanupPlanResponse,
+    CleanupExecuteResponse,
+    CleanupStreamEvent
 } from '../types/conan';
 
 const API_BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:8000';
@@ -154,6 +158,108 @@ export const getPackageConfiguration = async (
         throw new Error('Failed to load package configuration');
     }
 };
+
+// Cleanup: compute a deletion plan (non-destructive preview)
+export const previewCleanup = async (
+    req: CleanupRequest
+): Promise<CleanupPlanResponse> => {
+    try {
+        // Enumerating binaries across a remote can take a while — override the
+        // default 10s timeout for cleanup calls.
+        const response = await api.post('/cleanup/preview', req, { timeout: 120000 });
+        return response.data;
+    } catch (error: any) {
+        console.error('Cleanup preview error:', error);
+        const detail = error?.response?.data?.detail;
+        throw new Error(detail || 'Failed to compute cleanup plan');
+    }
+};
+
+// Cleanup: execute a previewed plan. expectedDeleteCount guards against the
+// remote changing between preview and execute (backend returns 409 on mismatch).
+export const executeCleanup = async (
+    req: CleanupRequest,
+    expectedDeleteCount: number
+): Promise<CleanupExecuteResponse> => {
+    try {
+        const response = await api.post(
+            '/cleanup/execute',
+            { ...req, expected_delete_count: expectedDeleteCount },
+            { timeout: 300000 }
+        );
+        return response.data;
+    } catch (error: any) {
+        console.error('Cleanup execute error:', error);
+        const detail = error?.response?.data?.detail;
+        throw new Error(detail || 'Failed to execute cleanup');
+    }
+};
+
+// POST a JSON body and consume an NDJSON stream, invoking onEvent per line.
+// Abort via the optional AbortSignal (throws DOMException 'AbortError').
+const streamNdjson = async (
+    path: string,
+    body: unknown,
+    onEvent: (ev: CleanupStreamEvent) => void,
+    signal?: AbortSignal
+): Promise<void> => {
+    const response = await fetch(`${API_BASE_URL}${path}`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(body),
+        signal,
+    });
+    if (!response.ok || !response.body) {
+        let detail = `HTTP ${response.status}`;
+        try {
+            const j = await response.json();
+            detail = j.detail || detail;
+        } catch {
+            /* non-JSON error body */
+        }
+        throw new Error(detail);
+    }
+
+    const reader = response.body.getReader();
+    const decoder = new TextDecoder();
+    let buffer = '';
+    // eslint-disable-next-line no-constant-condition
+    while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+        buffer += decoder.decode(value, { stream: true });
+        let nl: number;
+        while ((nl = buffer.indexOf('\n')) >= 0) {
+            const line = buffer.slice(0, nl).trim();
+            buffer = buffer.slice(nl + 1);
+            if (line) onEvent(JSON.parse(line));
+        }
+    }
+    const tail = buffer.trim();
+    if (tail) onEvent(JSON.parse(tail));
+};
+
+// Streaming cleanup preview: emits scan_start / scan_progress / result (or error).
+export const streamCleanupPreview = (
+    req: CleanupRequest,
+    onEvent: (ev: CleanupStreamEvent) => void,
+    signal?: AbortSignal
+): Promise<void> => streamNdjson('/cleanup/preview/stream', req, onEvent, signal);
+
+// Streaming cleanup execute: scan_* then delete_start / deleted / failed / done.
+// expectedDeleteCount guards against the remote changing since preview (409/conflict).
+export const streamCleanupExecute = (
+    req: CleanupRequest,
+    expectedDeleteCount: number,
+    onEvent: (ev: CleanupStreamEvent) => void,
+    signal?: AbortSignal
+): Promise<void> =>
+    streamNdjson(
+        '/cleanup/execute/stream',
+        { ...req, expected_delete_count: expectedDeleteCount },
+        onEvent,
+        signal
+    );
 
 export const checkHealth = async () => {
     try {

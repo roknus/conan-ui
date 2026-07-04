@@ -31,4 +31,7 @@ export const paths = {
 
     /** Configuration/detail page for a specific binary */
     packageConfig: (remote: string, pkg: string) => `/${enc(remote)}/${enc(pkg)}/configuration`,
+
+    /** Package cleanup tool for a remote */
+    cleanup: (remote: string) => `/${enc(remote)}/cleanup`,
 };

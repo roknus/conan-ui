@@ -85,6 +85,93 @@ export interface ConanRevisionInfo {
     latest_revision?: string;
 }
 
+// --- Cleanup ---------------------------------------------------------------
+
+export type CleanupScope = 'recipe_revision' | 'version' | 'name';
+export type PrereleaseMode = 'all' | 'only' | 'exclude';
+
+// Filter + rules describing which binaries to clean up on a remote.
+export interface CleanupRequest {
+    remote_name: string;
+    pattern: string;
+    package_query?: string;
+    older_than_days?: number;
+    keep_at_least?: number;
+    keep_scope: CleanupScope;
+    prerelease: PrereleaseMode;
+}
+
+export interface CleanupBinary {
+    key: string;
+    package_id: string;
+    ref: string;
+    created?: number;
+    size?: number;
+    action: 'keep' | 'delete';
+    reason: string;
+}
+
+export interface CleanupGroup {
+    key: string;
+    binaries: CleanupBinary[];
+    to_delete: number;
+    total_size: number;
+    delete_size: number;
+}
+
+export interface CleanupSummary {
+    total: number;
+    to_delete: number;
+    to_keep: number;
+    total_size: number;
+    reclaim_size: number;
+}
+
+export interface CleanupPlanResponse {
+    remote_name: string;
+    groups: CleanupGroup[];
+    summary: CleanupSummary;
+}
+
+export interface CleanupExecuteResponse {
+    remote_name: string;
+    deleted: string[];
+    failed: Array<{ key: string; error: string }>;
+    total_deleted: number;
+    reclaimed_size: number;
+}
+
+// One NDJSON line from the streaming cleanup endpoints.
+export interface CleanupStreamEvent {
+    event:
+        | 'scan_start'
+        | 'scan_progress'
+        | 'slot'
+        | 'slot_ready'
+        | 'result'
+        | 'delete_start'
+        | 'deleted'
+        | 'failed'
+        | 'done'
+        | 'conflict'
+        | 'error';
+    total?: number;
+    done?: number;
+    current?: string;
+    id?: string;
+    label?: string;
+    key?: string;
+    error?: string;
+    detail?: string;
+    reclaimed_size?: number;
+    reclaim_total?: number;
+    total_deleted?: number;
+    failed?: Array<{ key: string; error: string }>;
+    remote_name?: string;
+    groups?: CleanupGroup[];
+    summary?: CleanupSummary;
+}
+
 // API Response types
 export interface PackagesListResponse {
     packages: ConanPackageInfo[];
