@@ -250,7 +250,17 @@ async def get_package_configuration(
                 detail.settings = target_config.get("settings", {})
                 detail.options = target_config.get("options", {})
                 detail.requires = target_config.get("requires", [])
-                detail.created = pref.timestamp
+
+                # packages_configurations() yields prefs with no package revision or
+                # timestamp, so pref.timestamp is always None here (Created shows
+                # "Unknown"). Resolve the latest package revision to get the binary's
+                # actual creation/upload time.
+                try:
+                    latest_pref = conan_api.list.latest_package_revision(target_pref, remote=remote)
+                    if latest_pref:
+                        detail.created = latest_pref.timestamp
+                except Exception as e:
+                    logger.warning(f"Could not resolve package revision timestamp for {target_pref}: {e}")
 
                 if target_pref:
                     detail.path = str(target_pref)
