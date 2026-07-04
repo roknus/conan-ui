@@ -1,4 +1,4 @@
-import React, { useRef, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import Layout from '../components/Layout';
 import { formatDate } from '../utils/dateUtils';
 import { streamCleanupPreview, streamCleanupExecute } from '../services/api';
@@ -85,6 +85,18 @@ const CleanupPage: React.FC = () => {
 
     const previewAbort = useRef<AbortController | null>(null);
     const deleteAbort = useRef<AbortController | null>(null);
+
+    // A previewed plan belongs to the remote it was scanned against. When the
+    // active remote changes, drop the stale list (and abort any in-flight scan).
+    useEffect(() => {
+        previewAbort.current?.abort();
+        setSlots([]);
+        setExpanded(new Set());
+        setResult(null);
+        setError(null);
+        setScan({ done: 0, total: 0, current: '' });
+        setScanning(false);
+    }, [remoteName]);
 
     const buildRequest = (): CleanupRequest => ({
         remote_name: remoteName!,
