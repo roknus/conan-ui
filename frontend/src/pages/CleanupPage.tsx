@@ -59,7 +59,7 @@ const CleanupPage: React.FC = () => {
     const { remote: remoteName } = useRemote();
 
     // Filter + rules
-    const [pattern, setPattern] = useState('*');
+    const [pattern, setPattern] = useState('');
     const [packageQuery, setPackageQuery] = useState('');
     const [onlyPrerelease, setOnlyPrerelease] = useState(false);
     const [olderThanDays, setOlderThanDays] = useState('');
