@@ -43,10 +43,6 @@ A modern web interface for browsing and deleting your Conan packages on remote r
      ]
    }
    ```
-   
-   > See [REPOSITORIES.md](REPOSITORIES.md) for detailed configuration
-   > 
-   > Upgrading from environment variables? See [MIGRATION.md](MIGRATION.md)
 
 3. **Start the backend** (dependencies are managed with [Poetry](https://python-poetry.org/)):
    ```bash
@@ -90,10 +86,6 @@ For a one-command setup:
    }
    ```
    
-   > See [REPOSITORIES.md](REPOSITORIES.md) for detailed configuration
-   > 
-   > Upgrading from environment variables? See [MIGRATION.md](MIGRATION.md)
-   >
    > In Docker, `config.json` is mounted to `/etc/conan-ui/config.json` in the container
 
 2. **Start with Docker Compose**:
