@@ -3,11 +3,13 @@ import './SearchBar.css';
 
 interface SearchBarProps {
     onSearch: (query: string) => void;
+    /** Clear the search. Falls back to onSearch('') when not provided. */
+    onClear?: () => void;
     initialValue?: string;
     initialQuery?: string;
 }
 
-const SearchBar: React.FC<SearchBarProps> = ({ onSearch, initialValue = '', initialQuery = '' }) => {
+const SearchBar: React.FC<SearchBarProps> = ({ onSearch, onClear, initialValue = '', initialQuery = '' }) => {
     const [query, setQuery] = useState(initialValue || initialQuery);
 
     const handleSubmit = (e: React.FormEvent) => {
@@ -17,7 +19,11 @@ const SearchBar: React.FC<SearchBarProps> = ({ onSearch, initialValue = '', init
 
     const handleClear = () => {
         setQuery('');
-        onSearch('');
+        if (onClear) {
+            onClear();
+        } else {
+            onSearch('');
+        }
     };
 
     return (

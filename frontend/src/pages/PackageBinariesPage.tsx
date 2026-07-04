@@ -4,10 +4,12 @@ import Layout from '../components/Layout';
 import PackageBinaries from '../components/PackageBinaries';
 import { ConanPackageBinary, ConanRevisionInfo, ConanBinaryFilters } from '../types/conan';
 import { getPackageBinaries, getPackageVersions } from '../services/api';
+import { useRemote } from '../context/RemoteContext';
 import { paths } from '../routes/paths';
 
 const PackageBinariesPage: React.FC = () => {
-    const { remoteName, packageName } = useParams<{ remoteName: string; packageName: string }>();
+    const { remote: remoteName } = useRemote();
+    const { packageName } = useParams<{ packageName: string }>();
     const [binaries, setBinaries] = useState<ConanPackageBinary[]>([]);
     const [revisionInfo, setRevisionInfo] = useState<ConanRevisionInfo | null>(null);
     const [binaryFilters, setBinaryFilters] = useState<ConanBinaryFilters>({});
@@ -28,7 +30,9 @@ const PackageBinariesPage: React.FC = () => {
     const version = searchParams.get('version') || '';
     const activeTab: 'binaries' | 'versions' = searchParams.get('tab') === 'versions' ? 'versions' : 'binaries';
 
-    const packagePath = paths.package(remoteName!, packageName!);
+    // Bare pathname for this package. Repo is carried in the query string
+    // (?repo=), so it must not be baked into the pathname here.
+    const packagePathname = `/${encodeURIComponent(packageName!)}`;
 
     const handleTabChange = (nextTab: 'binaries' | 'versions') => {
         if (!remoteName) return;
@@ -38,7 +42,7 @@ const PackageBinariesPage: React.FC = () => {
         } else {
             params.delete('tab');
         }
-        navigate({ pathname: packagePath, search: params.toString() });
+        navigate({ pathname: packagePathname, search: params.toString() });
     };
 
     const handleBinaryFiltersChange = async (filters: ConanBinaryFilters) => {
@@ -48,8 +52,9 @@ const PackageBinariesPage: React.FC = () => {
         setError(null);
         setBinaryFilters(filters);
 
-        // Update URL with filter parameters (keep the selected version)
+        // Update URL with filter parameters (keep the remote + selected version)
         const params = new URLSearchParams();
+        if (remoteName) params.set('repo', remoteName);
         if (version) params.set('version', version);
         if (filters.recipe_revision) params.set('revision', filters.recipe_revision);
         if (filters.user) params.set('user', filters.user);
@@ -60,7 +65,7 @@ const PackageBinariesPage: React.FC = () => {
         if (filters.compiler_version) params.set('compiler_version', filters.compiler_version);
         if (filters.build_type) params.set('build_type', filters.build_type);
 
-        navigate({ pathname: packagePath, search: params.toString() });
+        navigate({ pathname: packagePathname, search: params.toString() });
 
         try {
             const result = await getPackageBinaries(
@@ -92,13 +97,14 @@ const PackageBinariesPage: React.FC = () => {
         if (binary.package_id === 'recipe-only') return;
 
         const params = new URLSearchParams();
+        if (remoteName) params.set('repo', remoteName);
         if (version) params.set('version', version);
         if (binary.user) params.set('user', binary.user);
         if (binary.channel) params.set('channel', binary.channel);
         if (binary.package_id) params.set('package_id', binary.package_id);
         if (binary.recipe_revision) params.set('recipe_revision', binary.recipe_revision);
 
-        navigate({ pathname: paths.packageConfig(remoteName, packageName!), search: params.toString() });
+        navigate({ pathname: `${packagePathname}/configuration`, search: params.toString() });
     };
 
     const handleVersionSelect = (selectedVersion: string) => {
@@ -121,7 +127,7 @@ const PackageBinariesPage: React.FC = () => {
                 if (latest) {
                     const params = new URLSearchParams(searchParams);
                     params.set('version', latest);
-                    navigate({ pathname: packagePath, search: params.toString() }, { replace: true });
+                    navigate({ pathname: packagePathname, search: params.toString() }, { replace: true });
                 } else {
                     setError('No versions found for this package');
                     setLoading(false);
@@ -184,7 +190,7 @@ const PackageBinariesPage: React.FC = () => {
     }, [remoteName, packageName, version, revision, user, channel, os, arch, compiler, compilerVersion, buildType]);
 
     return (
-        <Layout remoteName={remoteName}>
+        <Layout>
             {loading && <div className="loading">Loading...</div>}
             {error && <div className="error">Error: {error}</div>}
             {!loading && !error && revisionInfo && (

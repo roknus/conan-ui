@@ -7,15 +7,17 @@ import sys
 import os
 sys.path.append(os.path.dirname(os.path.abspath(__file__)))
 
-from main import app, conan_api, get_all_remotes
+from main import app  # noqa: F401  (imported to ensure the app assembles)
+from conan_client import get_all_remotes, get_optional_api
 
 def test_basic_functionality():
     """Test basic Conan API functionality"""
     print("🧪 Testing Conan API Backend...")
-    
+
     # Test 1: Check if Conan API is available
+    conan_api = get_optional_api()
     print(f"✅ Conan API available: {bool(conan_api)}")
-    
+
     if not conan_api:
         print("❌ Conan API not available - check Conan installation")
         return False

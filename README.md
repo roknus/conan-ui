@@ -1,13 +1,13 @@
-# 🔍 Conan UI
+# Conan UI
 
-A modern web interface for browsing and searching your Conan packages. Get a clear overview of your remote repositories with an intuitive, responsive design.
+A modern web interface for browsing and deleting your Conan packages on remote repositories, built for JFrog Artifactory. Get a clear overview of your remotes with an intuitive, responsive design.
 
 <img src="doc/package_binaries.png" alt="Package Binaries Screenshot" style="max-height: 400px;">
 
-## 🚀 Getting Started
+## Getting Started
 
 ### Prerequisites
-- Python 3.8+ and pip
+- Python 3.8+ and [Poetry](https://python-poetry.org/)
 - Node.js 16+ and npm
 
 ### Quick Setup
@@ -44,14 +44,15 @@ A modern web interface for browsing and searching your Conan packages. Get a cle
    }
    ```
    
-   > 📚 See [REPOSITORIES.md](REPOSITORIES.md) for detailed configuration
+   > See [REPOSITORIES.md](REPOSITORIES.md) for detailed configuration
    > 
-   > 🔄 Upgrading from environment variables? See [MIGRATION.md](MIGRATION.md)
+   > Upgrading from environment variables? See [MIGRATION.md](MIGRATION.md)
 
-3. **Start the backend**:
+3. **Start the backend** (dependencies are managed with [Poetry](https://python-poetry.org/)):
    ```bash
-   pip install -r requirements.txt
-   python main.py
+   cd backend
+   poetry install
+   poetry run python main.py   # serves on http://localhost:8000
    ```
 
 4. **Start the frontend** (in a new terminal):
@@ -63,7 +64,7 @@ A modern web interface for browsing and searching your Conan packages. Get a cle
 
 5. **Open your browser** to `http://localhost:3000`
 
-### 🐳 Docker
+### Docker
 
 For a one-command setup:
 
@@ -89,11 +90,11 @@ For a one-command setup:
    }
    ```
    
-   > 📚 See [REPOSITORIES.md](REPOSITORIES.md) for detailed configuration
+   > See [REPOSITORIES.md](REPOSITORIES.md) for detailed configuration
    > 
-   > 🔄 Upgrading from environment variables? See [MIGRATION.md](MIGRATION.md)
+   > Upgrading from environment variables? See [MIGRATION.md](MIGRATION.md)
    >
-   > 💡 In Docker, `config.json` is mounted to `/etc/conan-ui/config.json` in the container
+   > In Docker, `config.json` is mounted to `/etc/conan-ui/config.json` in the container
 
 2. **Start with Docker Compose**:
    ```bash
@@ -102,10 +103,10 @@ For a one-command setup:
 
 3. **Open your browser** to `http://localhost:3000`
 
-## 🤝 Contributing
+## Contributing
 
 Contributions welcome! Please feel free to submit pull requests or create issues for bugs and feature requests.
 
-## 📝 License
+## License
 
 GPL 3.0 License - see [LICENSE](LICENSE) file for details.

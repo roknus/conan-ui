@@ -1,6 +1,8 @@
-// Centralized URL builders. Keeping every route string in one place avoids the
-// hand-written `/${encodeURIComponent(...)}` duplication that let the version
-// param drift between the path and the query string.
+// Centralized URL builders. The active remote is carried as a ?repo= query
+// param (falling back to the default when absent) rather than a path segment,
+// so switching repositories never rewrites the path. Keeping every route string
+// in one place avoids the hand-written `/${encodeURIComponent(...)}` duplication
+// that let params drift between the path and the query string.
 
 const enc = encodeURIComponent;
 
@@ -9,26 +11,41 @@ export interface PackageViewOptions {
     tab?: 'binaries' | 'versions';
 }
 
+// Assemble a path plus query string, always carrying the active remote as ?repo=.
+const build = (
+    path: string,
+    remote: string,
+    params: Record<string, string | undefined> = {}
+): string => {
+    const sp = new URLSearchParams();
+    if (remote) sp.set('repo', remote);
+    for (const [key, val] of Object.entries(params)) {
+        if (val) sp.set(key, val);
+    }
+    const qs = sp.toString();
+    return qs ? `${path}?${qs}` : path;
+};
+
 export const paths = {
-    /** Landing / remote selection */
-    root: () => '/',
+    /** Package list for the active remote (the app root) */
+    root: (remote: string) => build('/', remote),
 
-    /** A remote's package list, optionally with a search query */
-    remote: (remote: string, query?: string) =>
-        query ? `/${enc(remote)}?q=${enc(query)}` : `/${enc(remote)}`,
+    /** Package list, optionally with a search query */
+    remote: (remote: string, query?: string) => build('/', remote, { q: query }),
 
-    /** Bare package path (no query) */
-    package: (remote: string, pkg: string) => `/${enc(remote)}/${enc(pkg)}`,
+    /** Bare package view (no version) */
+    package: (remote: string, pkg: string) => build(`/${enc(pkg)}`, remote),
 
     /** Package view (binaries/versions tabs) at a given version */
-    packageView: (remote: string, pkg: string, opts: PackageViewOptions = {}) => {
-        const params = new URLSearchParams();
-        if (opts.version) params.set('version', opts.version);
-        if (opts.tab === 'versions') params.set('tab', 'versions');
-        const qs = params.toString();
-        return qs ? `/${enc(remote)}/${enc(pkg)}?${qs}` : `/${enc(remote)}/${enc(pkg)}`;
-    },
+    packageView: (remote: string, pkg: string, opts: PackageViewOptions = {}) =>
+        build(`/${enc(pkg)}`, remote, {
+            version: opts.version,
+            tab: opts.tab === 'versions' ? 'versions' : undefined,
+        }),
 
     /** Configuration/detail page for a specific binary */
-    packageConfig: (remote: string, pkg: string) => `/${enc(remote)}/${enc(pkg)}/configuration`,
+    packageConfig: (remote: string, pkg: string) => build(`/${enc(pkg)}/configuration`, remote),
+
+    /** Package cleanup tool */
+    cleanup: (remote: string) => build('/cleanup', remote),
 };

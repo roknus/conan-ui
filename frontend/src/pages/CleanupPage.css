@@ -1,0 +1,593 @@
+.cleanup {
+    max-width: 1100px;
+    margin: 0 auto;
+    padding: 1.5rem;
+    display: flex;
+    flex-direction: column;
+    gap: 1.25rem;
+}
+
+.cleanup-head h2 {
+    margin: 0 0 0.25rem;
+    font-size: 1.4rem;
+    color: var(--text);
+}
+
+.cleanup-sub {
+    margin: 0;
+    color: var(--text-dim);
+}
+
+.cleanup-sub code,
+.cleanup code {
+    font-family: var(--mono);
+    color: var(--cyan);
+}
+
+.cleanup-note {
+    background: rgba(224, 168, 58, 0.1);
+    border: 1px solid rgba(224, 168, 58, 0.35);
+    color: var(--text);
+    border-radius: var(--radius);
+    padding: 0.75rem 1rem;
+    font-size: 0.9rem;
+    line-height: 1.45;
+}
+
+/* ---------- Form ---------- */
+.cleanup-form {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 1.25rem;
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+}
+
+.cleanup-filters,
+.cleanup-rules {
+    display: grid;
+    gap: 1rem;
+}
+
+.cleanup-filters {
+    grid-template-columns: repeat(2, 1fr);
+}
+
+.cleanup-rules {
+    grid-template-columns: repeat(3, 1fr);
+}
+
+.cleanup-checkbox {
+    display: flex;
+    align-items: center;
+    gap: 0.4rem;
+    font-size: 0.82rem;
+    color: var(--text-dim);
+    cursor: pointer;
+}
+
+.cleanup-checkbox input {
+    cursor: pointer;
+}
+
+.cleanup-field {
+    display: flex;
+    flex-direction: column;
+    gap: 0.35rem;
+}
+
+.cleanup-field label {
+    font-size: 0.85rem;
+    font-weight: 600;
+    color: var(--text);
+}
+
+.cleanup-field input,
+.cleanup-field select {
+    background: var(--surface-2);
+    border: 1px solid var(--border-strong);
+    color: var(--text);
+    border-radius: var(--radius-sm);
+    padding: 0.55rem 0.7rem;
+    font-size: 0.9rem;
+    font-family: inherit;
+}
+
+.cleanup-field input:focus,
+.cleanup-field select:focus {
+    outline: none;
+    border-color: var(--accent);
+    box-shadow: 0 0 0 3px var(--accent-soft);
+}
+
+.cleanup-hint {
+    font-size: 0.75rem;
+    color: var(--text-faint);
+}
+
+.cleanup-actions {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    flex-wrap: wrap;
+}
+
+.cleanup-rule-summary {
+    font-size: 0.85rem;
+    color: var(--text-dim);
+}
+
+.cleanup-preview-btn {
+    background: var(--accent);
+    color: #fff;
+    border: none;
+    border-radius: var(--radius-sm);
+    padding: 0.6rem 1.2rem;
+    font-size: 0.9rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background 0.15s ease;
+}
+
+.cleanup-preview-btn:hover:not(:disabled) {
+    background: var(--accent-hover);
+}
+
+.cleanup-preview-btn:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+.cleanup-error {
+    margin: 0;
+}
+
+/* ---------- Result ---------- */
+.cleanup-result {
+    background: rgba(63, 185, 80, 0.08);
+    border: 1px solid rgba(63, 185, 80, 0.35);
+    border-radius: var(--radius);
+    padding: 1rem 1.25rem;
+}
+
+.cleanup-result h3 {
+    margin: 0;
+    color: var(--green);
+}
+
+.cleanup-failed {
+    margin-top: 0.75rem;
+    color: var(--red);
+    font-size: 0.85rem;
+}
+
+.cleanup-failed code {
+    font-family: var(--mono);
+    color: var(--red);
+}
+
+/* ---------- Plan ---------- */
+.cleanup-summary {
+    display: flex;
+    align-items: center;
+    gap: 1.25rem;
+    flex-wrap: wrap;
+    padding: 0.5rem 0;
+}
+
+.cleanup-summary .stat {
+    font-size: 0.95rem;
+    color: var(--text-dim);
+}
+
+.cleanup-summary .stat b {
+    color: var(--text);
+    font-size: 1.15rem;
+}
+
+.cleanup-summary .stat.keep b {
+    color: var(--green);
+}
+
+.cleanup-summary .stat.delete b {
+    color: var(--red);
+}
+
+.cleanup-summary .stat.reclaim b {
+    color: var(--amber);
+}
+
+.stat-sub {
+    color: var(--text-faint);
+    font-size: 0.85em;
+}
+
+.cleanup-linkbtn {
+    margin-left: auto;
+    background: none;
+    border: none;
+    color: var(--accent-hover);
+    font-size: 0.85rem;
+    font-family: inherit;
+    cursor: pointer;
+    padding: 0.2rem 0.3rem;
+    border-radius: 4px;
+}
+
+.cleanup-linkbtn:hover {
+    text-decoration: underline;
+}
+
+.cleanup-toggle {
+    font-size: 0.85rem;
+    color: var(--text-dim);
+    display: flex;
+    align-items: center;
+    gap: 0.4rem;
+    cursor: pointer;
+}
+
+.cleanup-empty {
+    color: var(--text-dim);
+    padding: 1rem;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+}
+
+.cleanup-confirm-bar {
+    display: flex;
+    align-items: center;
+}
+
+.cleanup-confirm {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    flex-wrap: wrap;
+    background: rgba(247, 102, 106, 0.08);
+    border: 1px solid rgba(247, 102, 106, 0.35);
+    border-radius: var(--radius);
+    padding: 0.75rem 1rem;
+    font-size: 0.9rem;
+    color: var(--text);
+}
+
+.cleanup-delete-btn {
+    background: transparent;
+    color: var(--red);
+    border: 1px solid var(--red);
+    border-radius: var(--radius-sm);
+    padding: 0.55rem 1.1rem;
+    font-size: 0.9rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background 0.15s ease, color 0.15s ease;
+}
+
+.cleanup-delete-btn:hover:not(:disabled) {
+    background: var(--red);
+    color: #fff;
+}
+
+.cleanup-delete-btn.danger {
+    background: var(--red);
+    color: #fff;
+}
+
+.cleanup-delete-btn:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+}
+
+.cleanup-cancel-btn {
+    background: var(--surface-2);
+    color: var(--text-dim);
+    border: 1px solid var(--border-strong);
+    border-radius: var(--radius-sm);
+    padding: 0.55rem 1rem;
+    font-size: 0.9rem;
+    cursor: pointer;
+}
+
+.cleanup-cancel-btn:hover:not(:disabled) {
+    color: var(--text);
+}
+
+/* ---------- Group tables ---------- */
+.cleanup-group {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    overflow: hidden;
+    margin-top: 0.75rem;
+}
+
+.cleanup-group-head {
+    display: flex;
+    align-items: center;
+    gap: 0.7rem;
+    width: 100%;
+    padding: 0.6rem 0.9rem;
+    background: var(--surface-2);
+    border: none;
+    font-family: inherit;
+    text-align: left;
+    cursor: pointer;
+    transition: background 0.12s ease;
+}
+
+.cleanup-group-head:hover {
+    background: var(--surface-hover);
+}
+
+/* Loading placeholder header (package found, binaries still resolving).
+   Same element as a loaded header, just non-interactive with a spinner. */
+.cleanup-group-head:disabled,
+.cleanup-group-head:disabled:hover {
+    cursor: default;
+    background: var(--surface-2);
+    opacity: 1;
+}
+
+.cleanup-plan > .progressbar {
+    margin-bottom: 0.75rem;
+}
+
+.cleanup-group-caret {
+    color: var(--text-dim);
+    font-size: 0.8rem;
+    flex-shrink: 0;
+    transition: transform 0.15s ease;
+}
+
+.cleanup-group-caret.open {
+    transform: rotate(90deg);
+}
+
+.cleanup-group-head code {
+    font-family: var(--mono);
+    font-size: 0.85rem;
+    color: var(--text);
+    word-break: break-all;
+}
+
+.cleanup-group-meta {
+    margin-left: auto;
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    white-space: nowrap;
+}
+
+.cleanup-group-count {
+    font-size: 0.8rem;
+    color: var(--text-dim);
+    white-space: nowrap;
+}
+
+.cleanup-group-size {
+    font-size: 0.8rem;
+    color: var(--amber);
+    white-space: nowrap;
+}
+
+.cleanup-table .nowrap {
+    white-space: nowrap;
+}
+
+.cleanup-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 0.85rem;
+}
+
+.cleanup-table th {
+    text-align: left;
+    padding: 0.5rem 0.9rem;
+    color: var(--text-faint);
+    font-weight: 600;
+    font-size: 0.75rem;
+    text-transform: uppercase;
+    letter-spacing: 0.03em;
+    border-bottom: 1px solid var(--border);
+}
+
+.cleanup-table td {
+    padding: 0.5rem 0.9rem;
+    border-bottom: 1px solid var(--border);
+    color: var(--text);
+    vertical-align: top;
+}
+
+.cleanup-table tr:last-child td {
+    border-bottom: none;
+}
+
+.cleanup-table tr.delete {
+    background: rgba(247, 102, 106, 0.05);
+}
+
+.cleanup-table .mono {
+    font-family: var(--mono);
+    font-size: 0.8rem;
+    word-break: break-all;
+}
+
+.cleanup-table .dim {
+    color: var(--text-dim);
+}
+
+.badge {
+    display: inline-block;
+    padding: 0.15rem 0.5rem;
+    border-radius: var(--radius-pill);
+    font-size: 0.72rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.03em;
+}
+
+.badge.keep {
+    background: rgba(63, 185, 80, 0.15);
+    color: var(--green);
+}
+
+.badge.delete {
+    background: rgba(247, 102, 106, 0.15);
+    color: var(--red);
+}
+
+/* ---------- Delete bar (top-right, above summary) ---------- */
+.cleanup-planbar {
+    display: flex;
+    justify-content: flex-end;
+    margin-bottom: 0.25rem;
+}
+
+/* ---------- Progress bar ---------- */
+.progressbar {
+    height: 8px;
+    background: var(--surface-2);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-pill);
+    overflow: hidden;
+}
+
+.progressbar-fill {
+    height: 100%;
+    background: linear-gradient(90deg, var(--accent), var(--cyan));
+    border-radius: var(--radius-pill);
+    transition: width 0.2s ease;
+}
+
+/* ---------- Scan panel (progressive preview) ---------- */
+.cleanup-scan {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 1rem 1.25rem;
+    display: flex;
+    flex-direction: column;
+    gap: 0.6rem;
+}
+
+.cleanup-scan-list {
+    display: flex;
+    flex-direction: column;
+    gap: 0.4rem;
+    max-height: 440px;
+    overflow-y: auto;
+}
+
+.cleanup-scan-item {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1rem;
+    padding: 0.55rem 0.9rem;
+    background: var(--surface-2);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+}
+
+.cleanup-scan-item code {
+    font-family: var(--mono);
+    font-size: 0.85rem;
+    color: var(--text);
+    word-break: break-all;
+}
+
+.cleanup-spinner {
+    width: 14px;
+    height: 14px;
+    flex-shrink: 0;
+    border: 2px solid var(--border-strong);
+    border-top-color: var(--accent);
+    border-radius: 50%;
+    animation: cleanup-spin 0.7s linear infinite;
+}
+
+@keyframes cleanup-spin {
+    to {
+        transform: rotate(360deg);
+    }
+}
+
+.cleanup-result.cancelled {
+    background: rgba(224, 168, 58, 0.08);
+    border-color: rgba(224, 168, 58, 0.35);
+}
+
+.cleanup-result.cancelled h3 {
+    color: var(--amber);
+}
+
+/* ---------- Delete modal ---------- */
+.cleanup-modal-overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(5, 8, 13, 0.62);
+    backdrop-filter: blur(3px);
+    -webkit-backdrop-filter: blur(3px);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 100;
+    padding: 1.5rem;
+}
+
+.cleanup-modal {
+    background: var(--surface);
+    border: 1px solid var(--border-strong);
+    border-radius: var(--radius);
+    box-shadow: var(--shadow);
+    width: 100%;
+    max-width: 460px;
+    padding: 1.5rem;
+    display: flex;
+    flex-direction: column;
+    gap: 0.9rem;
+}
+
+.cleanup-modal h3 {
+    margin: 0;
+    color: var(--text);
+}
+
+.cleanup-modal p {
+    margin: 0;
+    color: var(--text-dim);
+    line-height: 1.5;
+}
+
+.cleanup-modal-status {
+    font-size: 0.9rem;
+    color: var(--text) !important;
+}
+
+.cleanup-modal-note {
+    font-size: 0.78rem;
+    color: var(--text-faint) !important;
+}
+
+.cleanup-modal-error {
+    color: var(--red) !important;
+    word-break: break-word;
+}
+
+.cleanup-modal-actions {
+    display: flex;
+    gap: 0.6rem;
+    justify-content: flex-end;
+    margin-top: 0.3rem;
+}
+
+@media (max-width: 720px) {
+    .cleanup-filters,
+    .cleanup-rules {
+        grid-template-columns: 1fr;
+    }
+}
