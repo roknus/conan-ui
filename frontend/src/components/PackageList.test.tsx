@@ -1,5 +1,6 @@
 import React from 'react';
 import { render, screen, fireEvent } from '@testing-library/react';
+import { MemoryRouter } from 'react-router-dom';
 import PackageList from './PackageList';
 import { ConanPackageInfo } from '../types/conan';
 
@@ -14,8 +15,14 @@ function makePackages(count: number): ConanPackageInfo[] {
     }));
 }
 
+// Cards render as router <Link>s, so every render needs a Router context.
+const packageHref = (pkg: ConanPackageInfo) => `/${pkg.name}`;
+
+function renderList(ui: React.ReactElement) {
+    return render(<MemoryRouter>{ui}</MemoryRouter>);
+}
+
 describe('PackageList', () => {
-    const onPackageSelect = jest.fn();
     const onPageChange = jest.fn();
 
     beforeEach(() => {
@@ -23,16 +30,16 @@ describe('PackageList', () => {
     });
 
     it('renders empty state when no packages', () => {
-        render(<PackageList packages={[]} onPackageSelect={onPackageSelect} />);
+        renderList(<PackageList packages={[]} packageHref={packageHref} />);
         expect(screen.getByText(/No packages found/)).toBeInTheDocument();
     });
 
     it('renders packages without pagination when totalPackages <= perPage', () => {
         const packages = makePackages(5);
-        render(
+        renderList(
             <PackageList
                 packages={packages}
-                onPackageSelect={onPackageSelect}
+                packageHref={packageHref}
                 totalPackages={5}
                 perPage={20}
                 currentPage={1}
@@ -45,10 +52,10 @@ describe('PackageList', () => {
 
     it('shows total from totalPackages prop, not packages.length', () => {
         const packages = makePackages(20);
-        render(
+        renderList(
             <PackageList
                 packages={packages}
-                onPackageSelect={onPackageSelect}
+                packageHref={packageHref}
                 totalPackages={55}
                 perPage={20}
                 currentPage={1}
@@ -61,10 +68,10 @@ describe('PackageList', () => {
 
     it('renders pagination controls when totalPackages > perPage', () => {
         const packages = makePackages(20);
-        render(
+        renderList(
             <PackageList
                 packages={packages}
-                onPackageSelect={onPackageSelect}
+                packageHref={packageHref}
                 totalPackages={45}
                 perPage={20}
                 currentPage={1}
@@ -81,10 +88,10 @@ describe('PackageList', () => {
 
     it('disables Previous button on first page', () => {
         const packages = makePackages(20);
-        render(
+        renderList(
             <PackageList
                 packages={packages}
-                onPackageSelect={onPackageSelect}
+                packageHref={packageHref}
                 totalPackages={45}
                 perPage={20}
                 currentPage={1}
@@ -97,10 +104,10 @@ describe('PackageList', () => {
 
     it('disables Next button on last page', () => {
         const packages = makePackages(5);
-        render(
+        renderList(
             <PackageList
                 packages={packages}
-                onPackageSelect={onPackageSelect}
+                packageHref={packageHref}
                 totalPackages={45}
                 perPage={20}
                 currentPage={3}
@@ -113,10 +120,10 @@ describe('PackageList', () => {
 
     it('calls onPageChange when clicking Next', () => {
         const packages = makePackages(20);
-        render(
+        renderList(
             <PackageList
                 packages={packages}
-                onPackageSelect={onPackageSelect}
+                packageHref={packageHref}
                 totalPackages={45}
                 perPage={20}
                 currentPage={1}
@@ -129,10 +136,10 @@ describe('PackageList', () => {
 
     it('calls onPageChange when clicking Previous', () => {
         const packages = makePackages(20);
-        render(
+        renderList(
             <PackageList
                 packages={packages}
-                onPackageSelect={onPackageSelect}
+                packageHref={packageHref}
                 totalPackages={60}
                 perPage={20}
                 currentPage={2}
@@ -145,10 +152,10 @@ describe('PackageList', () => {
 
     it('calls onPageChange when clicking a page number', () => {
         const packages = makePackages(20);
-        render(
+        renderList(
             <PackageList
                 packages={packages}
-                onPackageSelect={onPackageSelect}
+                packageHref={packageHref}
                 totalPackages={60}
                 perPage={20}
                 currentPage={1}
@@ -161,10 +168,10 @@ describe('PackageList', () => {
 
     it('highlights current page button as active', () => {
         const packages = makePackages(20);
-        render(
+        renderList(
             <PackageList
                 packages={packages}
-                onPackageSelect={onPackageSelect}
+                packageHref={packageHref}
                 totalPackages={60}
                 perPage={20}
                 currentPage={2}
@@ -179,10 +186,10 @@ describe('PackageList', () => {
 
     it('shows ellipsis for many pages', () => {
         const packages = makePackages(20);
-        render(
+        renderList(
             <PackageList
                 packages={packages}
-                onPackageSelect={onPackageSelect}
+                packageHref={packageHref}
                 totalPackages={200}
                 perPage={20}
                 currentPage={5}
@@ -194,16 +201,18 @@ describe('PackageList', () => {
         expect(ellipses.length).toBeGreaterThan(0);
     });
 
-    it('calls onPackageSelect when clicking a package row', () => {
+    it('renders each package card as a link to its href', () => {
         const packages = makePackages(3);
-        render(
+        renderList(
             <PackageList
                 packages={packages}
-                onPackageSelect={onPackageSelect}
+                packageHref={packageHref}
             />
         );
-        fireEvent.click(screen.getByText('package-2'));
-        expect(onPackageSelect).toHaveBeenCalledWith(packages[1]);
+        // The card is an anchor carrying the computed destination, so it can be
+        // opened in a new tab via middle-click / ctrl-click.
+        const card = screen.getByText('package-2').closest('a.package-card');
+        expect(card).toHaveAttribute('href', '/package-2');
     });
 
     it('renders long package names on a single non-wrapping line', () => {
@@ -215,10 +224,10 @@ describe('PackageList', () => {
                 created: Date.now() / 1000,
             },
         ];
-        render(
+        renderList(
             <PackageList
                 packages={longNamePackages}
-                onPackageSelect={onPackageSelect}
+                packageHref={packageHref}
             />
         );
         const nameElement = screen.getByText('ecs_multiplayer_framework_with_extremely_long_package_name');
@@ -239,10 +248,10 @@ describe('PackageList', () => {
                 created: Date.now() / 1000,
             },
         ];
-        render(
+        renderList(
             <PackageList
                 packages={packages}
-                onPackageSelect={onPackageSelect}
+                packageHref={packageHref}
             />
         );
         const nameElement = screen.getByText('a_very_long_conan_package_name_that_should_not_break_the_layout');
@@ -261,10 +270,10 @@ describe('PackageList', () => {
                 created: Date.now() / 1000,
             },
         ];
-        const { container } = render(
+        const { container } = renderList(
             <PackageList
                 packages={packages}
-                onPackageSelect={onPackageSelect}
+                packageHref={packageHref}
                 highlight="oo"
             />
         );
@@ -288,10 +297,10 @@ describe('PackageList', () => {
                 created: Date.now() / 1000,
             },
         ];
-        render(
+        renderList(
             <PackageList
                 packages={longNamePackages}
-                onPackageSelect={onPackageSelect}
+                packageHref={packageHref}
             />
         );
         expect(screen.getByText('short')).toBeInTheDocument();
@@ -303,10 +312,10 @@ describe('PackageList', () => {
 
     it('does not render pagination when onPageChange is not provided', () => {
         const packages = makePackages(20);
-        render(
+        renderList(
             <PackageList
                 packages={packages}
-                onPackageSelect={onPackageSelect}
+                packageHref={packageHref}
                 totalPackages={45}
                 perPage={20}
                 currentPage={1}

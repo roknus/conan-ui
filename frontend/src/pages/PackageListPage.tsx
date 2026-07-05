@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { useNavigate, useSearchParams } from 'react-router-dom';
+import { useSearchParams } from 'react-router-dom';
 import Layout from '../components/Layout';
 import PackageList from '../components/PackageList';
 import { ConanPackageInfo } from '../types/conan';
@@ -12,7 +12,6 @@ const PER_PAGE = 20;
 const PackageListPage: React.FC = () => {
     const { remote: remoteName } = useRemote();
     const [searchParams] = useSearchParams();
-    const navigate = useNavigate();
 
     const searchQuery = searchParams.get('q') || '';
 
@@ -45,15 +44,12 @@ const PackageListPage: React.FC = () => {
         fetchPage(1);
     }, [fetchPage]);
 
-    const handlePackageSelect = (pkg: ConanPackageInfo) => {
-        // Open the package view at its latest version; the page resolves the
-        // latest from the API when none is known.
-        navigate(
-            pkg.latest_version
-                ? paths.packageView(remoteName!, pkg.name, { version: pkg.latest_version })
-                : paths.package(remoteName!, pkg.name)
-        );
-    };
+    // Destination for a package card: its view at the latest version, or the
+    // bare package view (which resolves the latest from the API) when unknown.
+    const packageHref = (pkg: ConanPackageInfo) =>
+        pkg.latest_version
+            ? paths.packageView(remoteName!, pkg.name, { version: pkg.latest_version })
+            : paths.package(remoteName!, pkg.name);
 
     return (
         <Layout searchQuery={searchQuery}>
@@ -62,7 +58,7 @@ const PackageListPage: React.FC = () => {
             {!loading && !error && (
                 <PackageList
                     packages={packages}
-                    onPackageSelect={handlePackageSelect}
+                    packageHref={packageHref}
                     currentPage={currentPage}
                     totalPackages={totalPackages}
                     perPage={PER_PAGE}
