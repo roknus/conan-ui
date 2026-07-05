@@ -531,6 +531,9 @@ const CleanupPage: React.FC = () => {
                                 id="cl-pattern"
                                 value={pattern}
                                 onChange={(e) => setPattern(e.target.value)}
+                                onKeyDown={(e) => {
+                                    if (e.key === 'Enter' && !scanning) handlePreview();
+                                }}
                                 placeholder="*"
                             />
                             <label className="cleanup-checkbox">
