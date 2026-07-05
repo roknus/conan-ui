@@ -1,4 +1,5 @@
 import React from 'react';
+import { Link } from 'react-router-dom';
 import { ConanPackageInfo } from '../types/conan';
 import { formatDate } from '../utils/dateUtils';
 import { FaBox, FaArrowLeft, FaArrowRight } from './icons';
@@ -6,7 +7,9 @@ import './PackageList.css';
 
 interface PackageListProps {
     packages: ConanPackageInfo[];
-    onPackageSelect: (pkg: ConanPackageInfo) => void;
+    // Destination for each card; rendered as a real anchor href so the card can
+    // be opened in a new tab (middle-click / ctrl-click).
+    packageHref: (pkg: ConanPackageInfo) => string;
     currentPage?: number;
     totalPackages?: number;
     perPage?: number;
@@ -31,7 +34,7 @@ const highlightMatch = (name: string, query?: string): React.ReactNode => {
 
 const PackageList: React.FC<PackageListProps> = ({
     packages,
-    onPackageSelect,
+    packageHref,
     currentPage = 1,
     totalPackages,
     perPage = 20,
@@ -63,11 +66,10 @@ const PackageList: React.FC<PackageListProps> = ({
 
             <div className="package-grid">
                 {packages.map((pkg) => (
-                    <button
+                    <Link
                         key={pkg.name}
-                        type="button"
+                        to={packageHref(pkg)}
                         className="package-card"
-                        onClick={() => onPackageSelect(pkg)}
                     >
                         <span className="pkg-name" title={pkg.name}>
                             {highlightMatch(pkg.name, highlight)}
@@ -87,7 +89,7 @@ const PackageList: React.FC<PackageListProps> = ({
                                 {formatDate(pkg.created)}
                             </div>
                         )}
-                    </button>
+                    </Link>
                 ))}
             </div>
 
