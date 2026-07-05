@@ -54,13 +54,18 @@ export interface ConanPackageDetail {
     channel?: string;
     description?: string;
     homepage?: string;
+    url?: string;
     license?: string;
     author?: string;
+    topics?: string[];
     settings: Record<string, any>;
     options: Record<string, any>;
     requires: string[];
     created?: number;
     path: string;
+    package_id?: string;
+    recipe_revision?: string;
+    package_revision?: string;
 }
 
 // Package binary with full metadata including revisions

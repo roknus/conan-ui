@@ -137,10 +137,27 @@
     margin: 0;
 }
 
+.empty-note {
+    color: var(--text-faint);
+    font-size: 0.9rem;
+    font-style: italic;
+    margin: 0;
+}
+
 .requirements-list {
     display: flex;
     flex-wrap: wrap;
     gap: 0.5rem;
+}
+
+.topic-badge {
+    background: var(--accent-soft);
+    border: 1px solid var(--accent-border);
+    color: var(--accent-hover);
+    padding: 0.35rem 0.7rem;
+    border-radius: var(--radius-pill);
+    font-size: 0.82rem;
+    font-weight: 500;
 }
 
 .requirement-badge {
@@ -152,40 +169,6 @@
     font-size: 0.82rem;
     font-weight: 500;
     font-family: var(--mono);
-}
-
-.properties-table {
-    background: var(--bg-elevated);
-    border: 1px solid var(--border);
-    border-radius: var(--radius-sm);
-    overflow: hidden;
-}
-
-.property-row {
-    display: flex;
-    padding: 0.65rem 1rem;
-    border-bottom: 1px solid var(--border);
-}
-
-.property-row:last-child {
-    border-bottom: none;
-}
-
-.property-key {
-    font-weight: 600;
-    color: var(--text-dim);
-    min-width: 160px;
-    flex-shrink: 0;
-    font-family: var(--mono);
-    font-size: 0.85rem;
-}
-
-.property-value {
-    color: var(--text);
-    flex: 1;
-    word-break: break-word;
-    font-family: var(--mono);
-    font-size: 0.85rem;
 }
 
 .path-info {
@@ -209,15 +192,6 @@
 
     .info-grid {
         grid-template-columns: 1fr;
-    }
-
-    .property-row {
-        flex-direction: column;
-        gap: 0.25rem;
-    }
-
-    .property-key {
-        min-width: auto;
     }
 
     .detail-main {

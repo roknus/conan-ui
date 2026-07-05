@@ -1,7 +1,8 @@
 import React from 'react';
 import { ConanPackageDetail } from '../types/conan';
 import { formatDate } from '../utils/dateUtils';
-import { FaArrowLeft, FaClipboardList, FaAlignLeft, FaCircleInfo, FaCubes, FaGear, FaSliders, FaFolder } from './icons';
+import { FaArrowLeft, FaClipboardList, FaAlignLeft, FaCircleInfo, FaCubes, FaGear, FaSliders, FaFolder, FaFingerprint, FaTags } from './icons';
+import PropertiesTable, { objectToRows, PropertyRow } from './PropertiesTable';
 import './PackageDetail.css';
 
 interface PackageDetailProps {
@@ -16,22 +17,12 @@ const PackageDetail: React.FC<PackageDetailProps> = ({ package: pkg, onBack, onC
         if (onBack) onBack();    };
     
     const renderObjectAsTable = (obj: Record<string, any>, title: React.ReactNode) => {
-        const entries = Object.entries(obj);
-        if (entries.length === 0) return null;
+        if (Object.keys(obj).length === 0) return null;
 
         return (
             <div className="detail-section">
                 <h3>{title}</h3>
-                <div className="properties-table">
-                    {entries.map(([key, value]) => (
-                        <div key={key} className="property-row">
-                            <span className="property-key">{key}:</span>
-                            <span className="property-value">
-                                {typeof value === 'object' ? JSON.stringify(value, null, 2) : String(value)}
-                            </span>
-                        </div>
-                    ))}
-                </div>
+                <PropertiesTable rows={objectToRows(obj)} />
             </div>
         );
     };
@@ -81,6 +72,22 @@ const PackageDetail: React.FC<PackageDetailProps> = ({ package: pkg, onBack, onC
                         </div>
                     </div>
 
+                    {/* Reference / Identity */}
+                    {(() => {
+                        const referenceRows: PropertyRow[] = [
+                            ...(pkg.recipe_revision ? [{ label: 'Recipe revision', value: pkg.recipe_revision }] : []),
+                            ...(pkg.package_id ? [{ label: 'Package ID', value: pkg.package_id }] : []),
+                            ...(pkg.package_revision ? [{ label: 'Package revision', value: pkg.package_revision }] : []),
+                        ];
+                        if (referenceRows.length === 0) return null;
+                        return (
+                            <div className="detail-section">
+                                <h2><FaFingerprint /> Reference</h2>
+                                <PropertiesTable rows={referenceRows} />
+                            </div>
+                        );
+                    })()}
+
                     {/* Description */}
                     {pkg.description && (
                         <div className="detail-section">
@@ -92,31 +99,59 @@ const PackageDetail: React.FC<PackageDetailProps> = ({ package: pkg, onBack, onC
                     {/* Additional Info */}
                     <div className="detail-section">
                         <h2><FaCircleInfo /> Additional Information</h2>
-                        <div className="info-grid">
-                            {pkg.author && (
-                                <div className="info-item">
-                                    <span className="info-label">Author:</span>
-                                    <span className="info-value">{pkg.author}</span>
-                                </div>
-                            )}
-                            {pkg.license && (
-                                <div className="info-item">
-                                    <span className="info-label">License:</span>
-                                    <span className="info-value">{pkg.license}</span>
-                                </div>
-                            )}
-                            {pkg.homepage && (
-                                <div className="info-item">
-                                    <span className="info-label">Homepage:</span>
-                                    <span className="info-value">
-                                        <a href={pkg.homepage} target="_blank" rel="noopener noreferrer">
-                                            {pkg.homepage}
-                                        </a>
-                                    </span>
-                                </div>
-                            )}
-                        </div>
+                        {(pkg.author || pkg.license || pkg.homepage || pkg.url) ? (
+                            <div className="info-grid">
+                                {pkg.author && (
+                                    <div className="info-item">
+                                        <span className="info-label">Author:</span>
+                                        <span className="info-value">{pkg.author}</span>
+                                    </div>
+                                )}
+                                {pkg.license && (
+                                    <div className="info-item">
+                                        <span className="info-label">License:</span>
+                                        <span className="info-value">{pkg.license}</span>
+                                    </div>
+                                )}
+                                {pkg.homepage && (
+                                    <div className="info-item">
+                                        <span className="info-label">Homepage:</span>
+                                        <span className="info-value">
+                                            <a href={pkg.homepage} target="_blank" rel="noopener noreferrer">
+                                                {pkg.homepage}
+                                            </a>
+                                        </span>
+                                    </div>
+                                )}
+                                {pkg.url && (
+                                    <div className="info-item">
+                                        <span className="info-label">Recipe URL:</span>
+                                        <span className="info-value">
+                                            <a href={pkg.url} target="_blank" rel="noopener noreferrer">
+                                                {pkg.url}
+                                            </a>
+                                        </span>
+                                    </div>
+                                )}
+                            </div>
+                        ) : (
+                            <p className="empty-note">No additional metadata is published for this recipe.</p>
+                        )}
                     </div>
+
+                    {/* Topics */}
+                    {pkg.topics && pkg.topics.length > 0 && (
+                        <div className="detail-section">
+                            <h2><FaTags /> Topics</h2>
+                            <div className="requirements-list">
+                                {pkg.topics.map((topic, index) => (
+                                    <span key={index} className="topic-badge">
+                                        {topic}
+                                    </span>
+                                ))}
+                            </div>
+                        </div>
+                    )}
 
                     {/* Requirements */}
                     {pkg.requires.length > 0 && (

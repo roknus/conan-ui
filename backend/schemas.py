@@ -59,13 +59,19 @@ class ConanPackageDetail(BaseModel):
     channel: Optional[str] = None
     description: Optional[str] = None
     homepage: Optional[str] = None
+    url: Optional[str] = None
     license: Optional[str] = None
     author: Optional[str] = None
+    topics: List[str] = []
     settings: Dict[str, Any] = {}
     options: Dict[str, Any] = {}
     requires: List[str] = []
     created: Optional[float] = None
     path: str
+    # Identity / provenance of the resolved binary
+    package_id: Optional[str] = None
+    recipe_revision: Optional[str] = None
+    package_revision: Optional[str] = None
 
 
 class PackagesListResponse(BaseModel):

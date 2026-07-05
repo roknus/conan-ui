@@ -1,6 +1,7 @@
 """Package browsing endpoints: list, versions, configuration, binaries."""
 
 import logging
+import os
 from typing import Optional
 
 from fastapi import APIRouter, HTTPException, Query, Depends
@@ -26,6 +27,48 @@ from schemas import (
 logger = logging.getLogger(__name__)
 
 router = APIRouter()
+
+
+def _load_recipe_metadata(conan_api: ConanAPI, ref: RecipeReference, remote) -> dict:
+    """Read recipe-level attributes (description, license, homepage, ...) from a recipe.
+
+    These attributes live in the recipe's conanfile.py, not in the package
+    configuration data, so they must be read by downloading the recipe into the
+    local cache and inspecting it. The download is cached, so only the first view
+    of a given recipe revision pays the network cost. Best-effort: any failure
+    returns an empty dict rather than breaking the configuration response.
+    """
+    try:
+        conan_api.download.recipe(ref, remote=remote)
+        conanfile_path = os.path.join(conan_api.cache.export_path(ref), "conanfile.py")
+        conanfile = conan_api.local.inspect(conanfile_path, remotes=[remote], lockfile=None)
+
+        def _as_str(value):
+            if value is None:
+                return None
+            if isinstance(value, (list, tuple)):
+                return ", ".join(str(v) for v in value)
+            return str(value)
+
+        topics = getattr(conanfile, "topics", None)
+        if isinstance(topics, str):
+            topics = [topics]
+        elif isinstance(topics, (list, tuple)):
+            topics = [str(t) for t in topics]
+        else:
+            topics = []
+
+        return {
+            "description": _as_str(getattr(conanfile, "description", None)),
+            "license": _as_str(getattr(conanfile, "license", None)),
+            "author": _as_str(getattr(conanfile, "author", None)),
+            "homepage": _as_str(getattr(conanfile, "homepage", None)),
+            "url": _as_str(getattr(conanfile, "url", None)),
+            "topics": topics,
+        }
+    except Exception as e:
+        logger.warning(f"Could not load recipe metadata for {ref}: {e}")
+        return {}
 
 
 @router.get("/packages", response_model=PackagesListResponse)
@@ -226,8 +269,15 @@ async def get_package_configuration(
             version=version,
             user=user,
             channel=channel,
-            path=str(ref)
+            path=str(ref),
+            package_id=package_id,
+            recipe_revision=ref.revision,
         )
+
+        # Recipe-level metadata (description, license, homepage, ...) lives in the
+        # conanfile, not the package config, so read it separately (best-effort).
+        for field, value in _load_recipe_metadata(conan_api, ref, remote).items():
+            setattr(detail, field, value)
 
         # This endpoint is only for actual binary packages with package IDs
         if not package_id:
@@ -259,6 +309,7 @@ async def get_package_configuration(
                     latest_pref = conan_api.list.latest_package_revision(target_pref, remote=remote)
                     if latest_pref:
                         detail.created = latest_pref.timestamp
+                        detail.package_revision = latest_pref.revision
                 except Exception as e:
                     logger.warning(f"Could not resolve package revision timestamp for {target_pref}: {e}")
 
