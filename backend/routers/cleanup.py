@@ -264,43 +264,73 @@ def build_plan(rev_items, req: CleanupRequest, size_map: Dict[str, int]):
     return groups, summary, delete_recipes, delete_binaries
 
 
-def _primary_delete_count(summary: CleanupSummary, delete_mode: str) -> int:
-    """The number of removal operations for the chosen mode (drift-guard unit)."""
-    if delete_mode == "binaries":
-        return summary.to_delete_binaries
-    return summary.to_delete_recipes
+def _scan_items(conan_api: ConanAPI, remote, req: CleanupRequest):
+    """Scan the remote for all recipe revisions (with binaries) matching the filter.
 
-
-def compute_cleanup_plan(conan_api: ConanAPI, remote, req: CleanupRequest):
-    """Compute a cleanup plan without deleting anything (blocking)."""
+    Returns a list of (rref, [(key, pref), ...]) tuples.
+    """
     recipes = _list_recipes(conan_api, remote, req)
     items = []
     for recipe_ref in recipes:
         items.extend(_collect_recipe_revisions(conan_api, remote, req, recipe_ref))
+    return items
+
+
+def compute_cleanup_plan(conan_api: ConanAPI, remote, req: CleanupRequest):
+    """Compute a cleanup plan without deleting anything (blocking)."""
+    items = _scan_items(conan_api, remote, req)
     size_map = artifactory.get_binary_sizes(req.remote_name, _size_name_filter(req.pattern))
     return build_plan(items, req, size_map)
 
 
-def _removal_targets(delete_recipes, delete_binaries, delete_mode):
-    """(kind, obj, key) removal targets for the chosen mode.
+def _resolve_selection(items, req: CleanupExecuteRequest):
+    """Map the requested selection to concrete removal targets via a fresh scan.
 
-    kind is "recipe" (remove.recipe, cascades to binaries) or "package"
-    (remove.package); key is a stable id used for progress/reporting.
+    Returns (targets, missing): targets is a list of (kind, obj, key) where kind
+    is "recipe" or "package"; missing lists selected refs/keys no longer present.
+    Binaries whose recipe revision is also selected are skipped (the recipe
+    removal already covers them).
     """
-    if delete_mode == "binaries":
-        return [("package", pref, pref.repr_notime()) for pref in delete_binaries]
-    return [("recipe", rref, rref.repr_notime()) for rref in delete_recipes]
+    recipe_by_ref = {}
+    bin_by_key = {}
+    for rref, binaries in items:
+        recipe_by_ref[rref.repr_notime()] = rref
+        for key, pref in binaries:
+            bin_by_key[key] = pref
+
+    selected_recipes = set(req.delete_recipes)
+    # Which binary keys fall under a wholesale-removed recipe revision.
+    covered_bins = set()
+    for rref, binaries in items:
+        if rref.repr_notime() in selected_recipes:
+            covered_bins.update(key for key, _pref in binaries)
+
+    targets = []
+    missing = []
+    for ref in req.delete_recipes:
+        obj = recipe_by_ref.get(ref)
+        if obj is not None:
+            targets.append(("recipe", obj, ref))
+        else:
+            missing.append(ref)
+    for key in req.delete_binaries:
+        if key in covered_bins:
+            continue  # its recipe revision is being removed wholesale
+        obj = bin_by_key.get(key)
+        if obj is not None:
+            targets.append(("package", obj, key))
+        else:
+            missing.append(key)
+    return targets, missing
 
 
-def _size_maps(groups):
-    """Build {binary_key: bytes} and {recipe_ref: reclaimable bytes} from a plan."""
-    by_bin: Dict[str, int] = {}
-    by_recipe: Dict[str, int] = {}
-    for g in groups:
-        for r in g.revisions:
-            by_recipe[r.ref] = r.delete_size
-            for b in r.binaries:
-                by_bin[b.key] = b.size or 0
+def _selection_sizes(items, size_map: Dict[str, int]):
+    """{binary_key: bytes} and {recipe_ref: sum of its binary bytes}."""
+    by_bin = {key: (size_map.get(key) or 0) for _rref, bins in items for key, _p in bins}
+    by_recipe = {
+        rref.repr_notime(): sum(size_map.get(key) or 0 for key, _p in bins)
+        for rref, bins in items
+    }
     return by_bin, by_recipe
 
 
@@ -356,32 +386,17 @@ async def cleanup_execute(
     req: CleanupExecuteRequest,
     conan_api: ConanAPI = Depends(get_conan_api)
 ):
-    """Delete what a matching preview would remove.
-
-    Recomputes the plan server-side and aborts with 409 if the number of removal
-    targets (recipe revisions in "both" mode, binaries in "binaries" mode) no
-    longer matches what the client previewed.
-    """
+    """Delete exactly the recipe revisions and binaries the request selects."""
     _validate_rules(req)
 
     try:
         validate_remote_name(conan_api, req.remote_name)
         remote = get_remote_by_name(conan_api, req.remote_name)
-        groups, summary, delete_recipes, delete_binaries = compute_cleanup_plan(conan_api, remote, req)
 
-        primary = _primary_delete_count(summary, req.delete_mode)
-        if primary != req.expected_delete_count:
-            unit = "binaries" if req.delete_mode == "binaries" else "recipe revisions"
-            raise HTTPException(
-                status_code=409,
-                detail=(
-                    f"Plan changed since preview: {primary} {unit} now match "
-                    f"(previewed {req.expected_delete_count}). Re-run the preview."
-                )
-            )
-
-        by_bin, by_recipe = _size_maps(groups)
-        targets = _removal_targets(delete_recipes, delete_binaries, req.delete_mode)
+        items = _scan_items(conan_api, remote, req)
+        size_map = artifactory.get_binary_sizes(req.remote_name, _size_name_filter(req.pattern))
+        by_bin, by_recipe = _selection_sizes(items, size_map)
+        targets, _missing = _resolve_selection(items, req)
 
         deleted: List[str] = []
         failed: List[Dict[str, str]] = []
@@ -534,7 +549,7 @@ async def cleanup_execute_stream(
 
     async def gen():
         try:
-            # Recompute the plan (with scan progress) to guard against drift.
+            # Re-scan (with progress) so the selection resolves against current state.
             items = None
             async for kind, payload in _stream_scan(conan_api, remote, req, request):
                 if kind == "event":
@@ -548,24 +563,14 @@ async def cleanup_execute_stream(
 
             size_map = await run_in_threadpool(
                 artifactory.get_binary_sizes, req.remote_name, _size_name_filter(req.pattern))
-            groups, summary, delete_recipes, delete_binaries = build_plan(items, req, size_map)
-
-            primary = _primary_delete_count(summary, req.delete_mode)
-            if primary != req.expected_delete_count:
-                unit = "binaries" if req.delete_mode == "binaries" else "recipe revisions"
-                yield _nd({
-                    "event": "conflict",
-                    "detail": (
-                        f"Plan changed since preview: {primary} {unit} now match "
-                        f"(previewed {req.expected_delete_count}). Re-run the preview."
-                    ),
-                })
-                return
-
-            by_bin, by_recipe = _size_maps(groups)
-            targets = _removal_targets(delete_recipes, delete_binaries, req.delete_mode)
+            by_bin, by_recipe = _selection_sizes(items, size_map)
+            targets, _missing = _resolve_selection(items, req)
+            reclaim_total = sum(
+                (by_recipe if kind == "recipe" else by_bin).get(key, 0)
+                for kind, _obj, key in targets
+            )
             total = len(targets)
-            yield _nd({"event": "delete_start", "total": total, "reclaim_total": summary.reclaim_size})
+            yield _nd({"event": "delete_start", "total": total, "reclaim_total": reclaim_total})
 
             deleted = 0
             reclaimed = 0

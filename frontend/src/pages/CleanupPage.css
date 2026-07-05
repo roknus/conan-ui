@@ -362,7 +362,27 @@
 }
 
 .cleanup-rev.delete {
-    background: rgba(247, 102, 106, 0.04);
+    background: rgba(247, 102, 106, 0.05);
+}
+
+/* Checkbox (recipe-level) sits outside the expand button so both stay clickable. */
+.cleanup-rev-row {
+    display: flex;
+    align-items: center;
+}
+
+.cleanup-check {
+    flex-shrink: 0;
+    width: 15px;
+    height: 15px;
+    margin: 0 0 0 0.9rem;
+    cursor: pointer;
+    accent-color: var(--red);
+}
+
+.cleanup-check:disabled {
+    cursor: default;
+    opacity: 0.6;
 }
 
 .cleanup-rev-head {
@@ -370,8 +390,9 @@
     grid-template-columns: 14px 56px minmax(120px, 0.9fr) minmax(0, 1.4fr) auto;
     align-items: center;
     gap: 0.7rem;
-    width: 100%;
-    padding: 0.5rem 0.9rem 0.5rem 1.2rem;
+    flex: 1;
+    min-width: 0;
+    padding: 0.5rem 0.9rem 0.5rem 0.6rem;
     background: none;
     border: none;
     font-family: inherit;

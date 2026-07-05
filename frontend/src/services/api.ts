@@ -175,16 +175,21 @@ export const previewCleanup = async (
     }
 };
 
-// Cleanup: execute a previewed plan. expectedDeleteCount guards against the
-// remote changing between preview and execute (backend returns 409 on mismatch).
+// The explicit removal selection the user fine-tuned via checkboxes.
+export interface CleanupSelection {
+    delete_recipes: string[];  // recipe-revision refs removed wholesale
+    delete_binaries: string[]; // binary keys removed individually
+}
+
+// Cleanup: execute a selection. The backend removes exactly these targets.
 export const executeCleanup = async (
     req: CleanupRequest,
-    expectedDeleteCount: number
+    selection: CleanupSelection
 ): Promise<CleanupExecuteResponse> => {
     try {
         const response = await api.post(
             '/cleanup/execute',
-            { ...req, expected_delete_count: expectedDeleteCount },
+            { ...req, ...selection },
             { timeout: 300000 }
         );
         return response.data;
@@ -247,16 +252,16 @@ export const streamCleanupPreview = (
 ): Promise<void> => streamNdjson('/cleanup/preview/stream', req, onEvent, signal);
 
 // Streaming cleanup execute: scan_* then delete_start / deleted / failed / done.
-// expectedDeleteCount guards against the remote changing since preview (409/conflict).
+// Removes exactly the selection the user fine-tuned via checkboxes.
 export const streamCleanupExecute = (
     req: CleanupRequest,
-    expectedDeleteCount: number,
+    selection: CleanupSelection,
     onEvent: (ev: CleanupStreamEvent) => void,
     signal?: AbortSignal
 ): Promise<void> =>
     streamNdjson(
         '/cleanup/execute/stream',
-        { ...req, expected_delete_count: expectedDeleteCount },
+        { ...req, ...selection },
         onEvent,
         signal
     );

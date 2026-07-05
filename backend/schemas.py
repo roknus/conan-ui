@@ -144,12 +144,17 @@ class CleanupRequest(BaseModel):
 
 
 class CleanupExecuteRequest(CleanupRequest):
-    """Execute request carries the previewed delete count as a concurrency guard.
+    """Execute request carrying the explicit removal selection.
 
-    The count is mode-dependent: number of recipe revisions removed in "both"
-    mode, number of binaries removed in "binaries" mode.
+    The user fine-tunes the plan with per-item checkboxes, so execution removes
+    exactly this selection rather than recomputing from the rules:
+      - delete_recipes: recipe-revision refs (repr_notime) removed wholesale
+        (remove.recipe, cascading to their binaries).
+      - delete_binaries: binary keys (pref repr_notime) removed individually
+        (remove.package), for binaries whose recipe revision is kept.
     """
-    expected_delete_count: int
+    delete_recipes: List[str] = []
+    delete_binaries: List[str] = []
 
 
 class CleanupBinary(BaseModel):

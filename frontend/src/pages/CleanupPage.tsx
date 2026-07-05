@@ -31,13 +31,18 @@ type DelState = { done: number; total: number; reclaimed: number };
 type ModalPhase = null | 'confirm' | 'verifying' | 'deleting' | 'done' | 'cancelled' | 'error';
 type DeleteResult = { total_deleted: number; reclaimed_size: number; failed: Array<{ key: string; error: string }>; cancelled: boolean };
 
-const deriveSummary = (slots: Slot[]) => {
+// Summary derived from the current user selection (the checkboxes), not from the
+// plan's default actions. op_recipes/op_binaries are the actual remove calls;
+// to_delete_binaries also counts binaries that cascade with a removed recipe.
+const deriveSummary = (slots: Slot[], delRecipes: Set<string>, delBins: Set<string>) => {
     let total_recipes = 0;
     let to_delete_recipes = 0;
     let total_binaries = 0;
     let to_delete_binaries = 0;
     let total_size = 0;
     let reclaim_size = 0;
+    let op_recipes = 0;
+    let op_binaries = 0;
     for (const s of slots) {
         if (s.status !== 'ready') continue;
         for (const g of s.groups) {
@@ -45,10 +50,19 @@ const deriveSummary = (slots: Slot[]) => {
                 total_recipes += 1;
                 total_binaries += r.binaries.length;
                 total_size += r.total_size;
-                if (r.action === 'delete') {
+                if (delRecipes.has(r.ref)) {
                     to_delete_recipes += 1;
-                    to_delete_binaries += r.binaries.length;
-                    reclaim_size += r.delete_size;
+                    op_recipes += 1;
+                    to_delete_binaries += r.binaries.length; // cascade
+                    reclaim_size += r.total_size;
+                } else {
+                    for (const b of r.binaries) {
+                        if (delBins.has(b.key)) {
+                            to_delete_binaries += 1;
+                            op_binaries += 1;
+                            reclaim_size += b.size || 0;
+                        }
+                    }
                 }
             }
         }
@@ -61,7 +75,27 @@ const deriveSummary = (slots: Slot[]) => {
         to_delete_binaries,
         total_size,
         reclaim_size,
+        op_recipes,
+        op_binaries,
     };
+};
+
+// Default selection for a set of freshly-scanned groups, honoring the delete-mode:
+// "both" pre-checks the doomed recipe revisions; "binaries" pre-checks their
+// binaries (leaving the recipe metadata).
+const seedSelection = (
+    groups: CleanupGroup[],
+    mode: CleanupDeleteMode,
+    recipes: Set<string>,
+    bins: Set<string>
+) => {
+    for (const g of groups) {
+        for (const r of g.revisions) {
+            if (r.action !== 'delete') continue;
+            if (mode === 'both') recipes.add(r.ref);
+            else r.binaries.forEach((b) => bins.add(b.key));
+        }
+    }
 };
 
 // Cleanup tool: filter binaries on a remote, preview a plan (each package fills
@@ -78,8 +112,13 @@ const CleanupPage: React.FC = () => {
     const [deleteMode, setDeleteMode] = useState<CleanupDeleteMode>('both');
     const [deletionsOnly, setDeletionsOnly] = useState(false);
 
-    // Which group keys are expanded (collapsed by default to keep the list short)
+    // Which recipe revisions are expanded (collapsed by default).
     const [expanded, setExpanded] = useState<Set<string>>(new Set());
+
+    // User selection (fine-tuned via checkboxes). A recipe ref here means "remove
+    // the whole recipe revision"; a binary key means "remove just that binary".
+    const [deleteRecipes, setDeleteRecipes] = useState<Set<string>>(new Set());
+    const [deleteBinaries, setDeleteBinaries] = useState<Set<string>>(new Set());
 
     // Preview / plan state
     const [slots, setSlots] = useState<Slot[]>([]);
@@ -102,6 +141,8 @@ const CleanupPage: React.FC = () => {
         previewAbort.current?.abort();
         setSlots([]);
         setExpanded(new Set());
+        setDeleteRecipes(new Set());
+        setDeleteBinaries(new Set());
         setResult(null);
         setError(null);
         setScan({ done: 0, total: 0, current: '' });
@@ -120,12 +161,49 @@ const CleanupPage: React.FC = () => {
         prerelease: onlyPrerelease ? 'only' : 'all',
     });
 
-    const summary = deriveSummary(slots);
-    // The unit actually removed depends on the mode: whole recipe revisions
-    // ("both") or just their binaries ("binaries"). This drives the delete
-    // button, the confirm modal, and the server-side drift guard.
-    const primaryDelete =
-        deleteMode === 'binaries' ? summary.to_delete_binaries : summary.to_delete_recipes;
+    const summary = deriveSummary(slots, deleteRecipes, deleteBinaries);
+    // Total remove operations (whole recipe revisions + individual binaries).
+    const totalOps = summary.op_recipes + summary.op_binaries;
+
+    // Toggle a whole recipe revision in/out of the deletion selection.
+    const toggleRecipeSel = (ref: string) =>
+        setDeleteRecipes((prev) => {
+            const next = new Set(prev);
+            if (next.has(ref)) next.delete(ref);
+            else next.add(ref);
+            return next;
+        });
+
+    // Toggle a single binary in/out of the deletion selection.
+    const toggleBinarySel = (key: string) =>
+        setDeleteBinaries((prev) => {
+            const next = new Set(prev);
+            if (next.has(key)) next.delete(key);
+            else next.add(key);
+            return next;
+        });
+
+    // Changing the delete-mode re-seeds the default selection across all packages.
+    const changeDeleteMode = (mode: CleanupDeleteMode) => {
+        setDeleteMode(mode);
+        const recipes = new Set<string>();
+        const bins = new Set<string>();
+        for (const s of slots) {
+            if (s.status === 'ready') seedSelection(s.groups, mode, recipes, bins);
+        }
+        setDeleteRecipes(recipes);
+        setDeleteBinaries(bins);
+    };
+
+    // A label describing the removal operations for the delete button/modal.
+    const deleteLabel = (): string => {
+        const parts: string[] = [];
+        if (summary.op_recipes)
+            parts.push(`${summary.op_recipes} recipe revision${summary.op_recipes > 1 ? 's' : ''}`);
+        if (summary.op_binaries)
+            parts.push(`${summary.op_binaries} ${summary.op_binaries > 1 ? 'binaries' : 'binary'}`);
+        return parts.join(' + ') || 'nothing';
+    };
 
     const handlePreview = async () => {
         if (!remoteName) return;
@@ -133,6 +211,8 @@ const CleanupPage: React.FC = () => {
         setResult(null);
         setSlots([]);
         setExpanded(new Set());
+        setDeleteRecipes(new Set());
+        setDeleteBinaries(new Set());
         setScanning(true);
         setScan({ done: 0, total: 0, current: '' });
 
@@ -154,15 +234,28 @@ const CleanupPage: React.FC = () => {
                     case 'scan_progress':
                         setScan((s) => ({ ...s, done: ev.done ?? 0, total: ev.total ?? s.total }));
                         break;
-                    case 'slot_ready':
+                    case 'slot_ready': {
+                        const groups = ev.groups ?? [];
                         setSlots((prev) =>
                             prev.map((s) =>
-                                s.id === ev.id
-                                    ? { ...s, status: 'ready', groups: ev.groups ?? [] }
-                                    : s
+                                s.id === ev.id ? { ...s, status: 'ready', groups } : s
                             )
                         );
+                        // Seed this package's default selection from the current mode.
+                        setDeleteRecipes((prevR) => {
+                            const nextR = new Set(prevR);
+                            const throwaway = new Set<string>();
+                            seedSelection(groups, deleteMode, nextR, throwaway);
+                            return nextR;
+                        });
+                        setDeleteBinaries((prevB) => {
+                            const nextB = new Set(prevB);
+                            const throwaway = new Set<string>();
+                            seedSelection(groups, deleteMode, throwaway, nextB);
+                            return nextB;
+                        });
                         break;
+                    }
                     case 'error':
                         setError(ev.detail || 'Preview failed');
                         break;
@@ -179,7 +272,7 @@ const CleanupPage: React.FC = () => {
 
     const openDeleteModal = () => {
         setModalError(null);
-        setDel({ done: 0, total: primaryDelete, reclaimed: 0 });
+        setDel({ done: 0, total: totalOps, reclaimed: 0 });
         setModalPhase('confirm');
     };
 
@@ -194,8 +287,12 @@ const CleanupPage: React.FC = () => {
         let lastDone = 0;
         let lastReclaimed = 0;
 
+        const selection = {
+            delete_recipes: Array.from(deleteRecipes),
+            delete_binaries: Array.from(deleteBinaries),
+        };
         try {
-            await streamCleanupExecute(buildRequest(), primaryDelete, (ev) => {
+            await streamCleanupExecute(buildRequest(), selection, (ev) => {
                 switch (ev.event) {
                     case 'scan_start':
                         setScan({ done: 0, total: ev.total ?? 0, current: '' });
@@ -259,6 +356,8 @@ const CleanupPage: React.FC = () => {
         if (finished && (result || modalError)) {
             setSlots([]);
             setExpanded(new Set());
+            setDeleteRecipes(new Set());
+            setDeleteBinaries(new Set());
         }
     };
 
@@ -271,12 +370,18 @@ const CleanupPage: React.FC = () => {
         });
     };
 
-    // Recipe revisions visible under a group given the "deletions only" filter.
+    // Is any part of this recipe revision selected for deletion?
+    const isRevSelected = (r: CleanupRecipeRevision): boolean =>
+        deleteRecipes.has(r.ref) || r.binaries.some((b) => deleteBinaries.has(b.key));
+
+    // Recipe revisions visible under a group given the "selected only" filter.
     const visibleRevisions = (group: CleanupGroup): CleanupRecipeRevision[] =>
-        deletionsOnly ? group.revisions.filter((r) => r.action === 'delete') : group.revisions;
+        deletionsOnly ? group.revisions.filter(isRevSelected) : group.revisions;
 
     const readyGroups = slots.flatMap((s) => (s.status === 'ready' ? s.groups : []));
-    const visibleGroups = readyGroups.filter((g) => !deletionsOnly || g.to_delete_recipes > 0);
+    const visibleGroups = readyGroups.filter(
+        (g) => !deletionsOnly || g.revisions.some(isRevSelected)
+    );
     const allVisibleRevs = visibleGroups.flatMap((g) => visibleRevisions(g));
     const allExpanded = allVisibleRevs.length > 0 && allVisibleRevs.every((r) => expanded.has(r.ref));
     const toggleAll = () =>
@@ -289,33 +394,47 @@ const CleanupPage: React.FC = () => {
         const isOpen = expanded.has(rev.ref);
         // ref is "name/version[@user/channel]#rrev" — split into its two columns.
         const nameVersion = rev.ref.split('#')[0];
+        const recipeChecked = deleteRecipes.has(rev.ref);
+        const recipeAction = recipeChecked ? 'delete' : 'keep';
+        const selected = isRevSelected(rev);
         return (
-            <div className={`cleanup-rev ${rev.action}`} key={rev.ref}>
-                <button
-                    type="button"
-                    className="cleanup-rev-head"
-                    onClick={() => toggleRevision(rev.ref)}
-                    aria-expanded={isOpen}
-                >
-                    <span className={`cleanup-group-caret ${isOpen ? 'open' : ''}`}>▸</span>
-                    <span className={`badge ${rev.action}`}>{rev.action}</span>
-                    <code className="cleanup-rev-name">{nameVersion}</code>
-                    <code className="cleanup-rev-rrev">{rev.revision || '—'}</code>
-                    <span className="cleanup-rev-meta">
-                        <span className="nowrap">{formatDate(rev.created)}</span>
-                        <span className="cleanup-group-count">
-                            {rev.binaries.length} {rev.binaries.length === 1 ? 'binary' : 'binaries'}
+            <div className={`cleanup-rev ${selected ? 'delete' : ''}`} key={rev.ref}>
+                <div className="cleanup-rev-row">
+                    <input
+                        type="checkbox"
+                        className="cleanup-check"
+                        checked={recipeChecked}
+                        onChange={() => toggleRecipeSel(rev.ref)}
+                        title="Delete this whole recipe revision"
+                        aria-label={`Delete recipe revision ${nameVersion}`}
+                    />
+                    <button
+                        type="button"
+                        className="cleanup-rev-head"
+                        onClick={() => toggleRevision(rev.ref)}
+                        aria-expanded={isOpen}
+                    >
+                        <span className={`cleanup-group-caret ${isOpen ? 'open' : ''}`}>▸</span>
+                        <span className={`badge ${recipeAction}`}>{recipeAction}</span>
+                        <code className="cleanup-rev-name">{nameVersion}</code>
+                        <code className="cleanup-rev-rrev">{rev.revision || '—'}</code>
+                        <span className="cleanup-rev-meta">
+                            <span className="nowrap">{formatDate(rev.created)}</span>
+                            <span className="cleanup-group-count">
+                                {rev.binaries.length} {rev.binaries.length === 1 ? 'binary' : 'binaries'}
+                            </span>
+                            <span className="cleanup-group-size">
+                                {formatBytes(recipeChecked ? rev.total_size : rev.delete_size)}
+                            </span>
                         </span>
-                        <span className="cleanup-group-size">
-                            {formatBytes(rev.action === 'delete' ? rev.delete_size : rev.total_size)}
-                        </span>
-                    </span>
-                </button>
+                    </button>
+                </div>
                 {isOpen && (
                     rev.binaries.length > 0 ? (
                         <table className="cleanup-table">
                             <thead>
                                 <tr>
+                                    <th>Delete</th>
                                     <th>Action</th>
                                     <th>Package ID</th>
                                     <th>Package revision</th>
@@ -324,17 +443,34 @@ const CleanupPage: React.FC = () => {
                                 </tr>
                             </thead>
                             <tbody>
-                                {rev.binaries.map((b) => (
-                                    <tr key={b.key} className={b.action}>
-                                        <td>
-                                            <span className={`badge ${b.action}`}>{b.action}</span>
-                                        </td>
-                                        <td className="mono">{b.package_id}</td>
-                                        <td className="mono dim">{b.package_revision || '—'}</td>
-                                        <td className="nowrap">{formatDate(b.created)}</td>
-                                        <td className="nowrap">{formatBytes(b.size)}</td>
-                                    </tr>
-                                ))}
+                                {rev.binaries.map((b) => {
+                                    const binChecked = recipeChecked || deleteBinaries.has(b.key);
+                                    const binAction = binChecked ? 'delete' : 'keep';
+                                    return (
+                                        <tr key={b.key} className={binChecked ? 'delete' : ''}>
+                                            <td>
+                                                <input
+                                                    type="checkbox"
+                                                    className="cleanup-check"
+                                                    checked={binChecked}
+                                                    disabled={recipeChecked}
+                                                    onChange={() => toggleBinarySel(b.key)}
+                                                    title={recipeChecked
+                                                        ? 'Removed with its recipe revision'
+                                                        : 'Delete this binary'}
+                                                    aria-label={`Delete binary ${b.package_id}`}
+                                                />
+                                            </td>
+                                            <td>
+                                                <span className={`badge ${binAction}`}>{binAction}</span>
+                                            </td>
+                                            <td className="mono">{b.package_id}</td>
+                                            <td className="mono dim">{b.package_revision || '—'}</td>
+                                            <td className="nowrap">{formatDate(b.created)}</td>
+                                            <td className="nowrap">{formatBytes(b.size)}</td>
+                                        </tr>
+                                    );
+                                })}
                             </tbody>
                         </table>
                     ) : (
@@ -451,15 +587,15 @@ const CleanupPage: React.FC = () => {
                             <select
                                 id="cl-delmode"
                                 value={deleteMode}
-                                onChange={(e) => setDeleteMode(e.target.value as CleanupDeleteMode)}
+                                onChange={(e) => changeDeleteMode(e.target.value as CleanupDeleteMode)}
                             >
                                 <option value="both">recipes + binaries</option>
                                 <option value="binaries">binaries only</option>
                             </select>
                             <span className="cleanup-hint">
                                 {deleteMode === 'both'
-                                    ? 'Removes whole recipe revisions.'
-                                    : 'Keeps recipe metadata, strips binaries.'}
+                                    ? 'Default: pre-checks whole recipe revisions.'
+                                    : 'Default: pre-checks binaries, keeps recipes.'}
                             </span>
                         </div>
                     </div>
@@ -492,7 +628,7 @@ const CleanupPage: React.FC = () => {
                     <div className={`cleanup-result ${result.cancelled ? 'cancelled' : ''}`}>
                         <h3>
                             {result.cancelled ? <><FaCircleStop /> Stopped</> : <><FaCircleCheck /> Removed</>} {result.total_deleted}{' '}
-                            {deleteMode === 'binaries' ? 'binaries' : 'recipe revisions'} — reclaimed {formatBytes(result.reclaimed_size)}
+                            item{result.total_deleted === 1 ? '' : 's'} — reclaimed {formatBytes(result.reclaimed_size)}
                         </h3>
                         {result.failed.length > 0 && (
                             <div className="cleanup-failed">
@@ -514,17 +650,14 @@ const CleanupPage: React.FC = () => {
                     <div className="cleanup-plan">
                         {scanning && <ProgressBar pct={scanPct} />}
 
-                        {!scanning && primaryDelete > 0 && (
+                        {!scanning && totalOps > 0 && (
                             <div className="cleanup-planbar">
                                 <button
                                     type="button"
                                     className="cleanup-delete-btn"
                                     onClick={openDeleteModal}
                                 >
-                                    {deleteMode === 'binaries'
-                                        ? `Delete ${primaryDelete} binaries`
-                                        : `Delete ${primaryDelete} recipe revisions`}{' '}
-                                    ({formatBytes(summary.reclaim_size)})…
+                                    Delete {deleteLabel()} ({formatBytes(summary.reclaim_size)})…
                                 </button>
                             </div>
                         )}
@@ -533,11 +666,8 @@ const CleanupPage: React.FC = () => {
                             <span className="stat">
                                 <b>{summary.total_recipes}</b> recipe revisions
                             </span>
-                            <span className="stat keep">
-                                <b>{summary.to_keep_recipes}</b> kept
-                            </span>
                             <span className="stat delete">
-                                <b>{summary.to_delete_recipes}</b> to delete
+                                <b>{summary.to_delete_recipes}</b> selected
                             </span>
                             <span className="stat">
                                 <b>{summary.to_delete_binaries}</b>
@@ -558,7 +688,7 @@ const CleanupPage: React.FC = () => {
                                     checked={deletionsOnly}
                                     onChange={(e) => setDeletionsOnly(e.target.checked)}
                                 />
-                                Show deletions only
+                                Show selected only
                             </label>
                         </div>
 
@@ -596,15 +726,16 @@ const CleanupPage: React.FC = () => {
                         <div className="cleanup-modal" role="dialog" aria-modal="true">
                             {modalPhase === 'confirm' && (
                                 <>
-                                    <h3>
-                                        {deleteMode === 'binaries'
-                                            ? `Delete ${primaryDelete} binaries?`
-                                            : `Delete ${primaryDelete} recipe revisions?`}
-                                    </h3>
+                                    <h3>Delete {deleteLabel()}?</h3>
                                     <p>
-                                        {deleteMode === 'both' && summary.to_delete_binaries > 0 && (
-                                            <>Removes these recipe revisions and their{' '}
-                                            <b>{summary.to_delete_binaries}</b> binaries. </>
+                                        {summary.op_recipes > 0 && (
+                                            <>Removes <b>{summary.op_recipes}</b> whole recipe revision
+                                            {summary.op_recipes > 1 ? 's' : ''}
+                                            {summary.op_binaries > 0 ? ' plus ' : '. '}</>
+                                        )}
+                                        {summary.op_binaries > 0 && (
+                                            <><b>{summary.op_binaries}</b> individual binar
+                                            {summary.op_binaries > 1 ? 'ies' : 'y'}. </>
                                         )}
                                         This permanently frees{' '}
                                         <b>{formatBytes(summary.reclaim_size)}</b> from{' '}
@@ -638,7 +769,7 @@ const CleanupPage: React.FC = () => {
 
                             {modalPhase === 'done' && result && (
                                 <>
-                                    <h3><FaCircleCheck /> Removed {result.total_deleted} {deleteMode === 'binaries' ? 'binaries' : 'recipe revisions'}</h3>
+                                    <h3><FaCircleCheck /> Removed {result.total_deleted} item{result.total_deleted === 1 ? '' : 's'}</h3>
                                     <p>Reclaimed <b>{formatBytes(result.reclaimed_size)}</b>.</p>
                                     {result.failed.length > 0 && (
                                         <div className="cleanup-failed">
@@ -657,7 +788,7 @@ const CleanupPage: React.FC = () => {
                                 <>
                                     <h3><FaCircleStop /> Stopped</h3>
                                     <p>
-                                        Deleted {result.total_deleted} {deleteMode === 'binaries' ? 'binaries' : 'recipe revisions'} before
+                                        Deleted {result.total_deleted} item{result.total_deleted === 1 ? '' : 's'} before
                                         cancelling — reclaimed <b>{formatBytes(result.reclaimed_size)}</b>. The rest were
                                         left untouched.
                                     </p>
