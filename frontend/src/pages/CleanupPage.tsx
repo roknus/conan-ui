@@ -165,23 +165,54 @@ const CleanupPage: React.FC = () => {
     // Total remove operations (whole recipe revisions + individual binaries).
     const totalOps = summary.op_recipes + summary.op_binaries;
 
-    // Toggle a whole recipe revision in/out of the deletion selection.
-    const toggleRecipeSel = (ref: string) =>
-        setDeleteRecipes((prev) => {
-            const next = new Set(prev);
-            if (next.has(ref)) next.delete(ref);
-            else next.add(ref);
-            return next;
-        });
+    // Selection per recipe revision is tri-state: every binary selected (or the
+    // recipe picked wholesale) reads as "delete", some-but-not-all reads as
+    // "mixed", none reads as "keep". A ref lives in `deleteRecipes` only when the
+    // whole revision (recipe metadata + all binaries) is removed; a partial
+    // selection lives entirely in `deleteBinaries`.
 
-    // Toggle a single binary in/out of the deletion selection.
-    const toggleBinarySel = (key: string) =>
-        setDeleteBinaries((prev) => {
-            const next = new Set(prev);
-            if (next.has(key)) next.delete(key);
-            else next.add(key);
-            return next;
-        });
+    // Clicking the recipe-level checkbox: a fully-selected revision clears, while
+    // keep/mixed selects the whole revision. In "both" mode that means a wholesale
+    // recipe delete; in "binaries" mode it selects every binary but leaves the
+    // recipe metadata (a recipe-only revision has no binaries, so it goes wholesale).
+    const toggleRecipeSel = (rev: CleanupRecipeRevision) => {
+        const recipes = new Set(deleteRecipes);
+        const bins = new Set(deleteBinaries);
+        rev.binaries.forEach((b) => bins.delete(b.key));
+        recipes.delete(rev.ref);
+        if (recipeState(rev) !== 'delete') {
+            if (deleteMode === 'both' || rev.binaries.length === 0) recipes.add(rev.ref);
+            else rev.binaries.forEach((b) => bins.add(b.key));
+        }
+        setDeleteRecipes(recipes);
+        setDeleteBinaries(bins);
+    };
+
+    // Toggling one binary. A wholesale revision is first expanded into per-binary
+    // selections so the untouched binaries stay selected (leaving the revision
+    // "mixed"). In "both" mode, re-selecting the last binary collapses back to a
+    // wholesale recipe delete so the recipe metadata is removed too.
+    const toggleBinarySel = (rev: CleanupRecipeRevision, key: string) => {
+        const bins = new Set(deleteBinaries);
+        if (deleteRecipes.has(rev.ref)) {
+            rev.binaries.forEach((b) => bins.add(b.key));
+            bins.delete(key);
+        } else if (bins.has(key)) {
+            bins.delete(key);
+        } else {
+            bins.add(key);
+        }
+        const recipes = new Set(deleteRecipes);
+        recipes.delete(rev.ref);
+        const allSelected =
+            rev.binaries.length > 0 && rev.binaries.every((b) => bins.has(b.key));
+        if (allSelected && deleteMode === 'both') {
+            recipes.add(rev.ref);
+            rev.binaries.forEach((b) => bins.delete(b.key));
+        }
+        setDeleteRecipes(recipes);
+        setDeleteBinaries(bins);
+    };
 
     // Changing the delete-mode re-seeds the default selection across all packages.
     const changeDeleteMode = (mode: CleanupDeleteMode) => {
@@ -374,6 +405,23 @@ const CleanupPage: React.FC = () => {
     const isRevSelected = (r: CleanupRecipeRevision): boolean =>
         deleteRecipes.has(r.ref) || r.binaries.some((b) => deleteBinaries.has(b.key));
 
+    // Tri-state for a recipe revision's selection: 'delete' (all gone), 'mixed'
+    // (some binaries), or 'keep' (nothing).
+    const recipeState = (r: CleanupRecipeRevision): 'delete' | 'mixed' | 'keep' => {
+        if (deleteRecipes.has(r.ref)) return 'delete';
+        const n = r.binaries.length;
+        if (n === 0) return 'keep';
+        const sel = r.binaries.reduce((c, b) => (deleteBinaries.has(b.key) ? c + 1 : c), 0);
+        if (sel === 0) return 'keep';
+        return sel === n ? 'delete' : 'mixed';
+    };
+
+    // Bytes reclaimed for a revision under the current selection.
+    const revSelectedSize = (r: CleanupRecipeRevision): number => {
+        if (deleteRecipes.has(r.ref)) return r.total_size;
+        return r.binaries.reduce((s, b) => (deleteBinaries.has(b.key) ? s + (b.size || 0) : s), 0);
+    };
+
     // Recipe revisions visible under a group given the "selected only" filter.
     const visibleRevisions = (group: CleanupGroup): CleanupRecipeRevision[] =>
         deletionsOnly ? group.revisions.filter(isRevSelected) : group.revisions;
@@ -394,17 +442,19 @@ const CleanupPage: React.FC = () => {
         const isOpen = expanded.has(rev.ref);
         // ref is "name/version[@user/channel]#rrev" — split into its two columns.
         const nameVersion = rev.ref.split('#')[0];
-        const recipeChecked = deleteRecipes.has(rev.ref);
-        const recipeAction = recipeChecked ? 'delete' : 'keep';
-        const selected = isRevSelected(rev);
+        const state = recipeState(rev);
+        const wholesale = deleteRecipes.has(rev.ref);
         return (
-            <div className={`cleanup-rev ${selected ? 'delete' : ''}`} key={rev.ref}>
+            <div className={`cleanup-rev ${state === 'keep' ? '' : state}`} key={rev.ref}>
                 <div className="cleanup-rev-row">
                     <input
                         type="checkbox"
-                        className="cleanup-check"
-                        checked={recipeChecked}
-                        onChange={() => toggleRecipeSel(rev.ref)}
+                        className={`cleanup-check ${state === 'mixed' ? 'mixed' : ''}`}
+                        checked={state === 'delete'}
+                        ref={(el) => {
+                            if (el) el.indeterminate = state === 'mixed';
+                        }}
+                        onChange={() => toggleRecipeSel(rev)}
                         title="Delete this whole recipe revision"
                         aria-label={`Delete recipe revision ${nameVersion}`}
                     />
@@ -415,7 +465,7 @@ const CleanupPage: React.FC = () => {
                         aria-expanded={isOpen}
                     >
                         <span className={`cleanup-group-caret ${isOpen ? 'open' : ''}`}>▸</span>
-                        <span className={`badge ${recipeAction}`}>{recipeAction}</span>
+                        <span className={`badge ${state}`}>{state}</span>
                         <code className="cleanup-rev-name">{nameVersion}</code>
                         <code className="cleanup-rev-rrev">{rev.revision || '—'}</code>
                         <span className="cleanup-rev-meta">
@@ -424,7 +474,7 @@ const CleanupPage: React.FC = () => {
                                 {rev.binaries.length} {rev.binaries.length === 1 ? 'binary' : 'binaries'}
                             </span>
                             <span className="cleanup-group-size">
-                                {formatBytes(recipeChecked ? rev.total_size : rev.delete_size)}
+                                {formatBytes(revSelectedSize(rev))}
                             </span>
                         </span>
                     </button>
@@ -444,7 +494,7 @@ const CleanupPage: React.FC = () => {
                             </thead>
                             <tbody>
                                 {rev.binaries.map((b) => {
-                                    const binChecked = recipeChecked || deleteBinaries.has(b.key);
+                                    const binChecked = wholesale || deleteBinaries.has(b.key);
                                     const binAction = binChecked ? 'delete' : 'keep';
                                     return (
                                         <tr key={b.key} className={binChecked ? 'delete' : ''}>
@@ -453,10 +503,9 @@ const CleanupPage: React.FC = () => {
                                                     type="checkbox"
                                                     className="cleanup-check"
                                                     checked={binChecked}
-                                                    disabled={recipeChecked}
-                                                    onChange={() => toggleBinarySel(b.key)}
-                                                    title={recipeChecked
-                                                        ? 'Removed with its recipe revision'
+                                                    onChange={() => toggleBinarySel(rev, b.key)}
+                                                    title={binChecked
+                                                        ? 'Keep this binary'
                                                         : 'Delete this binary'}
                                                     aria-label={`Delete binary ${b.package_id}`}
                                                 />
