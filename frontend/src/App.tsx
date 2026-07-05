@@ -58,7 +58,7 @@ function App() {
         {/* Static segment declared before the dynamic :packageName route */}
         <Route path="/cleanup" element={<CleanupPage />} />
         <Route path="/:packageName" element={<PackageBinariesPage />} />
-        <Route path="/:packageName/configuration" element={<PackageConfigurationPage />} />
+        <Route path="/:packageName/package" element={<PackageConfigurationPage />} />
       </Routes>
     </RemoteProvider>
   );

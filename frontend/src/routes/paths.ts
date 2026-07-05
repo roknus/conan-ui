@@ -44,7 +44,7 @@ export const paths = {
         }),
 
     /** Configuration/detail page for a specific binary */
-    packageConfig: (remote: string, pkg: string) => build(`/${enc(pkg)}/configuration`, remote),
+    packageConfig: (remote: string, pkg: string) => build(`/${enc(pkg)}/package`, remote),
 
     /** Package cleanup tool */
     cleanup: (remote: string) => build('/cleanup', remote),

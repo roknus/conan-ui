@@ -112,7 +112,7 @@ const PackageBinariesPage: React.FC = () => {
         if (binary.package_id) params.set('package_id', binary.package_id);
         if (binary.recipe_revision) params.set('recipe_revision', binary.recipe_revision);
 
-        navigate({ pathname: `${packagePathname}/configuration`, search: params.toString() });
+        navigate({ pathname: `${packagePathname}/package`, search: params.toString() });
     };
 
     const handleVersionSelect = (selectedVersion: string) => {
