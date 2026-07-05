@@ -92,10 +92,11 @@ export interface ConanRevisionInfo {
 
 // --- Cleanup ---------------------------------------------------------------
 
-export type CleanupScope = 'recipe_revision' | 'version' | 'name';
+export type CleanupScope = 'version' | 'name';
+export type CleanupDeleteMode = 'both' | 'binaries';
 export type PrereleaseMode = 'all' | 'only' | 'exclude';
 
-// Filter + rules describing which binaries to clean up on a remote.
+// Filter + rules describing which recipe revisions to clean up on a remote.
 export interface CleanupRequest {
     remote_name: string;
     pattern: string;
@@ -103,31 +104,46 @@ export interface CleanupRequest {
     older_than_days?: number;
     keep_at_least?: number;
     keep_scope: CleanupScope;
+    delete_mode: CleanupDeleteMode;
     prerelease: PrereleaseMode;
 }
 
 export interface CleanupBinary {
     key: string;
     package_id: string;
-    ref: string;
+    package_revision?: string;
     created?: number;
     size?: number;
     action: 'keep' | 'delete';
+}
+
+export interface CleanupRecipeRevision {
+    ref: string;
+    revision: string;
+    is_prerelease: boolean;
+    created?: number;
+    action: 'keep' | 'delete';
     reason: string;
+    binaries: CleanupBinary[];
+    total_size: number;
+    delete_size: number;
 }
 
 export interface CleanupGroup {
     key: string;
-    binaries: CleanupBinary[];
-    to_delete: number;
+    revisions: CleanupRecipeRevision[];
+    to_delete_recipes: number;
+    to_delete_binaries: number;
     total_size: number;
     delete_size: number;
 }
 
 export interface CleanupSummary {
-    total: number;
-    to_delete: number;
-    to_keep: number;
+    total_recipes: number;
+    to_delete_recipes: number;
+    to_keep_recipes: number;
+    total_binaries: number;
+    to_delete_binaries: number;
     total_size: number;
     reclaim_size: number;
 }

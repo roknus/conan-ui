@@ -332,6 +332,116 @@
     opacity: 1;
 }
 
+/* A group header is now a static section title (the collapsible unit is the
+   recipe revision inside it), so it doesn't react to hover. */
+.cleanup-group-head.static,
+.cleanup-group-head.static:hover {
+    cursor: default;
+    background: var(--surface-2);
+}
+
+/* ---------- Recipe revisions (collapsible rows inside a group) ---------- */
+.cleanup-revs {
+    display: flex;
+    flex-direction: column;
+}
+
+.cleanup-rev-section {
+    padding: 0.35rem 0.9rem 0.35rem 1.2rem;
+    border-top: 1px solid var(--border);
+    background: var(--surface-2);
+    color: var(--text-faint);
+    font-size: 0.72rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+}
+
+.cleanup-rev {
+    border-top: 1px solid var(--border);
+}
+
+.cleanup-rev.delete {
+    background: rgba(247, 102, 106, 0.05);
+}
+
+/* Checkbox (recipe-level) sits outside the expand button so both stay clickable. */
+.cleanup-rev-row {
+    display: flex;
+    align-items: center;
+}
+
+.cleanup-check {
+    flex-shrink: 0;
+    width: 15px;
+    height: 15px;
+    margin: 0 0 0 0.9rem;
+    cursor: pointer;
+    accent-color: var(--red);
+}
+
+.cleanup-check:disabled {
+    cursor: default;
+    opacity: 0.6;
+}
+
+.cleanup-rev-head {
+    display: grid;
+    grid-template-columns: 14px 56px minmax(120px, 0.9fr) minmax(0, 1.4fr) auto;
+    align-items: center;
+    gap: 0.7rem;
+    flex: 1;
+    min-width: 0;
+    padding: 0.5rem 0.9rem 0.5rem 0.6rem;
+    background: none;
+    border: none;
+    font-family: inherit;
+    text-align: left;
+    cursor: pointer;
+    transition: background 0.12s ease;
+}
+
+.cleanup-rev-head:hover {
+    background: var(--surface-hover);
+}
+
+.cleanup-rev-head code {
+    font-family: var(--mono);
+    font-size: 0.85rem;
+    color: var(--text);
+}
+
+.cleanup-rev-name {
+    font-weight: 600;
+    word-break: break-all;
+}
+
+.cleanup-rev-rrev {
+    color: var(--text-dim) !important;
+    font-size: 0.8rem !important;
+    word-break: break-all;
+}
+
+.cleanup-rev-meta {
+    justify-self: end;
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    white-space: nowrap;
+    color: var(--text-dim);
+    font-size: 0.8rem;
+}
+
+.cleanup-rev-empty {
+    padding: 0.6rem 0.9rem 0.6rem 2.4rem;
+    color: var(--text-faint);
+    font-size: 0.82rem;
+}
+
+.cleanup-rev .cleanup-table {
+    border-top: 1px solid var(--border);
+}
+
 .cleanup-plan > .progressbar {
     margin-bottom: 0.75rem;
 }
