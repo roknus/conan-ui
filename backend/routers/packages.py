@@ -10,7 +10,13 @@ from conan.api.model import ListPattern, RecipeReference
 from conan.errors import ConanException
 from conan.internal.errors import NotFoundException
 
-from conan_client import get_conan_api, get_remote_by_name, validate_remote_name
+from conan_client import (
+    get_conan_api,
+    get_remote_by_name,
+    validate_remote_name,
+    search_recipes,
+    get_package_configurations,
+)
 from schemas import (
     ConanPackageVariant,
     ConanPackageBinary,
@@ -94,10 +100,10 @@ async def list_packages(
         # binary (latest revision + package configurations, ~2 requests PER recipe)
         # and times out on remotes with many packages. Binary details are fetched
         # lazily per-package by the detail endpoints below.
-        # NOTE: search.recipes returns references without revisions, so it can't be
-        # read back via PackagesList.refs() (that only yields refs with revisions).
+        # NOTE: search_recipes returns references without revisions, so it can't be
+        # read back via PackagesList.items() (that only yields refs with revisions).
         search_query = f"*{q}*" if q else "*"
-        refs = conan_api.search.recipes(search_query, remote=remote)
+        refs = search_recipes(conan_api, search_query, remote=remote)
 
         # Group recipe references by name in one pass, tracking newest version + count.
         packages_dict = {}
@@ -172,8 +178,7 @@ async def get_package_versions(
 
         # Group by version, then collect variants
         versions_dict = {}
-        for ref, recipe_bundle in package_list.refs().items():
-            #ref = RecipeReference.loads(ref_str)
+        for ref, packages_info in package_list.items():
             if ref.name == package_name:
                 version = ref.version
 
@@ -181,7 +186,6 @@ async def get_package_versions(
                     versions_dict[version] = []
 
                 # Get package variants (binaries) for this reference
-                packages_info = package_list.prefs(ref, recipe_bundle)
                 for pref, pref_bundle in packages_info.items():
                     variant = ConanPackageVariant(
                         user=ref.user,
@@ -285,8 +289,8 @@ async def get_package_configuration(
 
         # Get all package configurations for this recipe
         try:
-            pkg_configs = conan_api.list.packages_configurations(ref, remote=remote)
-              # Find the configuration for our specific package_id
+            pkg_configs = get_package_configurations(conan_api, ref, remote=remote)
+            # Find the configuration for our specific package_id
             target_pref = None
             target_config = None
 
@@ -301,7 +305,7 @@ async def get_package_configuration(
                 detail.options = target_config.get("options", {})
                 detail.requires = target_config.get("requires", [])
 
-                # packages_configurations() yields prefs with no package revision or
+                # get_package_configurations() yields prefs with no package revision or
                 # timestamp, so pref.timestamp is always None here (Created shows
                 # "Unknown"). Resolve the latest package revision to get the binary's
                 # actual creation/upload time.
@@ -361,11 +365,11 @@ async def get_package_filter_options(
         build_type_set = set()
         compiler_versions_map = {}
 
-        for ref, recipe_bundle in package_list.refs().items():
+        for ref, _packages_info in package_list.items():
             if ref.name == package_name and ref.version == version:
                 # Get package configurations for this recipe to get settings
                 try:
-                    pkg_configs = conan_api.list.packages_configurations(ref, remote=remote)
+                    pkg_configs = get_package_configurations(conan_api, ref, remote=remote)
 
                     for config_pref, config in pkg_configs.items():
                         settings = config.get("settings", {})
@@ -452,9 +456,9 @@ async def get_package_binaries(
         all_channels = set()
         all_refs = []
 
-        for ref, recipe_bundle in package_list.refs().items():
+        for ref, packages_info in package_list.items():
             if ref.name == package_name and ref.version == version:
-                all_refs.append((ref, recipe_bundle))
+                all_refs.append((ref, packages_info))
                 if ref.revision:
                     all_revisions.add(ref.revision)
                 if ref.user:
@@ -495,7 +499,7 @@ async def get_package_binaries(
 
         # Filter references based on criteria
         filtered_refs = []
-        for ref, recipe_bundle in all_refs:
+        for ref, packages_info in all_refs:
             # Filter by revision
             if target_revision and ref.revision != target_revision:
                 continue
@@ -505,15 +509,13 @@ async def get_package_binaries(
             # Filter by channel
             if channel is not None and ref.channel != channel:
                 continue
-            filtered_refs.append((ref, recipe_bundle))          # Get package binaries for filtered references
+            filtered_refs.append((ref, packages_info))
+        # Get package binaries for filtered references
         binaries = []
-        for ref, recipe_bundle in filtered_refs:
-            # Get package binaries for this reference
-            packages_info = package_list.prefs(ref, recipe_bundle)
-
+        for ref, packages_info in filtered_refs:
             # Get package configurations for this recipe to get settings/options
             try:
-                pkg_configs = conan_api.list.packages_configurations(ref, remote=remote)
+                pkg_configs = get_package_configurations(conan_api, ref, remote=remote)
             except Exception as e:
                 logger.warning(f"Could not get package configurations for {ref}: {e}")
                 pkg_configs = {}

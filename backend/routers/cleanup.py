@@ -11,7 +11,7 @@ A deletion either removes whole recipe revisions (`delete_mode="both"`, which
 cascades to their binaries via remove.recipe) or only the package binaries under
 the doomed revisions (`delete_mode="binaries"`, leaving the recipe metadata).
 
-The scan is done recipe-by-recipe (via search.recipes) so the streaming variants
+The scan is done recipe-by-recipe (via search_recipes) so the streaming variants
 can report progress and match recipe names as substrings (e.g. "admin" matches
 "admin_panel").
 """
@@ -29,7 +29,7 @@ from conan.api.model import ListPattern, RecipeReference, PkgReference
 from conan.errors import ConanException
 
 import artifactory
-from conan_client import get_conan_api, get_remote_by_name, validate_remote_name
+from conan_client import get_conan_api, get_remote_by_name, validate_remote_name, search_recipes
 from schemas import (
     CleanupRequest,
     CleanupExecuteRequest,
@@ -108,7 +108,7 @@ def _list_recipes(conan_api: ConanAPI, remote, req: CleanupRequest) -> List[Reci
 
     Applies the prerelease filter here so downstream work only sees kept versions.
     """
-    refs = conan_api.search.recipes(_search_pattern(req.pattern), remote=remote)
+    refs = search_recipes(conan_api, _search_pattern(req.pattern), remote=remote)
     out: List[RecipeReference] = []
     for ref in refs:
         if req.prerelease != "all":
@@ -133,8 +133,7 @@ def _collect_recipe_revisions(conan_api: ConanAPI, remote, req: CleanupRequest, 
     package_list = conan_api.list.select(pattern, req.package_query, remote, lru=None)
 
     revisions = []
-    for rref, ref_bundle in package_list.refs().items():
-        prefs = package_list.prefs(rref, ref_bundle)
+    for rref, prefs in package_list.items():
         binaries = [(pref.repr_notime(), pref) for pref in prefs.keys()]
         revisions.append((rref, binaries))
     return revisions

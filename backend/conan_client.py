@@ -10,7 +10,7 @@ import logging
 
 from fastapi import HTTPException
 from conan.api.conan_api import ConanAPI
-from conan.api.model import Remote
+from conan.api.model import Remote, ListPattern, RecipeReference, PkgReference
 
 import config
 import credentials
@@ -182,3 +182,57 @@ def get_supported_remotes(conan_api: ConanAPI):
         else:
             remotes.append({"name": remote_name, "url": None, "available": False})
     return remotes
+
+
+# --- Listing helpers ----------------------------------------------------------
+# Thin wrappers over `conan_api.list.select`, which is what conan's own
+# `search`/`list` CLI commands use. Conan 2.18+ removed the convenience methods
+# these cover (the `search` subapi and `list.packages_configurations`), leaving
+# `select` + reading the returned PackagesList as the supported way to query
+# recipes and package configurations. Iteration over a PackagesList uses its
+# `.items()` method directly at the call sites.
+
+
+def search_recipes(conan_api: ConanAPI, query: str, remote=None):
+    """Search a remote for recipe references matching `query`.
+
+    Returns a sorted list of RecipeReference (without revisions). A trailing '@'
+    restricts the result to references with no user/channel. Wraps `list.select`
+    with a recipe-only pattern, the same way `conan search` does.
+    """
+    only_none_user_channel = False
+    if query and query.endswith("@"):
+        only_none_user_channel = True
+        query = query[:-1]
+
+    # only_recipe: parse just the recipe part; select then returns a recipe-only
+    # PackagesList whose keys are the matching references.
+    pattern = ListPattern(query, rrev=None, only_recipe=True)
+    package_list = conan_api.list.select(pattern, remote=remote)
+
+    refs = [RecipeReference.loads(ref_str) for ref_str in package_list.serialize().keys()]
+    if only_none_user_channel:
+        refs = [r for r in refs if r.user is None and r.channel is None]
+    return sorted(refs)
+
+
+def get_package_configurations(conan_api: ConanAPI, ref: RecipeReference, remote=None):
+    """Return {PkgReference(package_id): info} for every binary of `ref`.
+
+    `info` holds each binary's settings/options/requires; `ref` must carry a
+    revision. Wraps `list.select` with a package pattern and reads the
+    per-package `info` from the resulting PackagesList — `.items()` intentionally
+    exposes only package revisions, not this configuration data.
+    """
+    assert ref.revision is not None, "get_package_configurations: ref should have a revision"
+
+    pattern = ListPattern(f"{ref.repr_notime()}:*", prev=None)
+    package_list = conan_api.list.select(pattern, remote=remote)
+
+    result = {}
+    for ref_str, ref_data in package_list.serialize().items():
+        for rrev, rrev_data in ref_data.get("revisions", {}).items():
+            recipe = RecipeReference.loads(f"{ref_str}#{rrev}")
+            for package_id, package_data in rrev_data.get("packages", {}).items():
+                result[PkgReference(recipe, package_id)] = package_data.get("info", {})
+    return result
