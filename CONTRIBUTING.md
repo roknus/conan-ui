@@ -6,8 +6,9 @@ welcome — bug reports, feature requests, documentation, and code.
 ## Getting set up
 
 Conan UI is a Python FastAPI backend plus a React/TypeScript frontend in a
-single repository. A `config.json` with your remote/Artifactory credentials is
-required to run the backend (it is gitignored — never commit it).
+single repository. A `.env` with your Artifactory host, repositories, and
+credentials is required to run the backend — copy `.env.example` to `.env` and
+fill it in (it is gitignored — never commit it).
 
 **Backend** (dependencies managed with [Poetry](https://python-poetry.org/)):
 

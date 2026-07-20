@@ -24,9 +24,15 @@ node_modules/
 build/
 dist/
 
-# Configuration files (contain credentials)
+# Legacy config files (no longer used; kept ignored so a stale one with
+# credentials can never be committed)
 config.json
 backend/config.json
+
+# Environment files (contain credentials)
+.env
+.env.*
+!.env.example
 
 # Logs
 *.log

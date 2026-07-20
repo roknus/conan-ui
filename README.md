@@ -18,31 +18,27 @@ A modern web interface for browsing and deleting your Conan packages on remote r
    cd conan-ui
    ```
 
-2. **Configure repositories** (create `config.json` file):
+2. **Configure repositories** (create a `.env` file):
    ```bash
-   # Copy the example configuration
-   cp config.json.example config.json
-   # Edit config.json with your Conan repositories
+   # Copy the example environment file
+   cp .env.example .env
+   # Edit .env with your Artifactory host, repositories, and credentials
    ```
-   
-   Example `config.json`:
-   ```json
-   {
-     "repositories": [
-       {
-         "name": "artifactory",
-         "url": "https://your-artifactory.com/artifactory/api/conan/conan-repo",
-         "user": "username",
-         "password": "password",
-         "is_default": true
-       },
-       {
-         "name": "conan-center",
-         "url": "https://center.conan.io"
-       }
-     ]
-   }
+
+   Example `.env`:
+   ```bash
+   ARTIFACTORY_URL=https://your-artifactory.com
+   CONAN_REMOTES=conan-repo,conan-dev
+   CONAN_LOGIN_USERNAME=username
+   CONAN_PASSWORD=password
    ```
+
+   Each remote's URL is derived as
+   `${ARTIFACTORY_URL}/artifactory/api/conan/<name>`, so `conan-repo` above
+   becomes `https://your-artifactory.com/artifactory/api/conan/conan-repo`.
+   The **first** name in `CONAN_REMOTES` is the default remote.
+
+   > `.env` is gitignored — never commit credentials.
 
 3. **Start the backend** (dependencies are managed with [Poetry](https://python-poetry.org/)):
    ```bash
@@ -64,29 +60,22 @@ A modern web interface for browsing and deleting your Conan packages on remote r
 
 For a one-command setup:
 
-1. **Configure repositories** (create `config.json` file in root directory):
+1. **Configure repositories** (create a `.env` file in the root directory):
    ```bash
-   # Copy the example configuration
-   cp config.json.example config.json
-   # Edit config.json with your Conan repositories
+   # Copy the example environment file
+   cp .env.example .env
+   # Edit .env with your Artifactory host, repositories, and credentials
    ```
-   
-   Example `config.json`:
-   ```json
-   {
-     "repositories": [
-       {
-         "name": "artifactory",
-         "url": "https://your-artifactory.com/artifactory/api/conan/conan-repo",
-         "user": "username",
-         "password": "password",
-         "is_default": true
-       }
-     ]
-   }
+
+   ```bash
+   ARTIFACTORY_URL=https://your-artifactory.com
+   CONAN_REMOTES=conan-repo,conan-dev
+   CONAN_LOGIN_USERNAME=username
+   CONAN_PASSWORD=password
    ```
-   
-   > In Docker, `config.json` is mounted to `/etc/conan-ui/config.json` in the container
+
+   > Docker Compose reads `.env` automatically and passes these into the
+   > container — no file is mounted.
 
 2. **Start with Docker Compose**:
    ```bash

@@ -11,11 +11,17 @@ services:
       - CORS_ORIGINS=${CORS_ORIGINS:-http://localhost:3000,http://127.0.0.1:3000}
       - BACKEND_PORT=${BACKEND_PORT:-8000}
       - FRONTEND_PORT=${FRONTEND_PORT:-80}
-    
+      # Repositories: the Artifactory host plus the Conan repos on it.
+      # Each remote's URL is derived as
+      #   ${ARTIFACTORY_URL}/artifactory/api/conan/<name>
+      # The first name in CONAN_REMOTES is the default remote.
+      - ARTIFACTORY_URL=${ARTIFACTORY_URL:-}
+      - CONAN_REMOTES=${CONAN_REMOTES:-}
+      # Remote credentials — set these in a gitignored .env.
+      - CONAN_LOGIN_USERNAME=${CONAN_LOGIN_USERNAME:-}
+      - CONAN_PASSWORD=${CONAN_PASSWORD:-}
+
     volumes:
-      # Mount config.json to standard location in container
-      # Create config.json from config.json.example before running
-      - ./config.json:/etc/conan-ui/config.json:ro
       # Optional: Mount local Conan home to persist cache
       - conan-cache:/app/.conan2
     

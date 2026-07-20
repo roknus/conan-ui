@@ -1,9 +1,10 @@
 """Artifactory-specific helpers.
 
-Conan's remote API doesn't expose artifact sizes, but our remotes are Artifactory
-Conan repos (URL contains `/api/conan/<repo>`). Artifactory's AQL API lets us sum
-the on-disk size of each package binary. Best-effort: any failure (non-Artifactory
-remote, auth, network) yields an empty map and the caller treats sizes as unknown.
+Conan's remote API doesn't expose artifact sizes, but every remote is a Conan
+repository on the configured Artifactory host (see config.ARTIFACTORY_URL).
+Artifactory's AQL API lets us sum the on-disk size of each package binary.
+Best-effort: any failure (unknown remote, auth, network) yields an empty map and
+the caller treats sizes as unknown.
 """
 
 import logging
@@ -11,15 +12,13 @@ import logging
 import requests
 
 import config
+import credentials
 
 logger = logging.getLogger(__name__)
 
-# Marker in a remote URL identifying an Artifactory Conan repository
-_CONAN_MARKER = "/api/conan/"
-
 
 def _repo_conf(remote_name: str):
-    """Find the config.json entry for a remote by name."""
+    """Find the configured entry for a remote by name."""
     for repo in config.REPOSITORIES:
         if repo.get("name") == remote_name:
             return repo
@@ -54,16 +53,15 @@ def get_binary_sizes(remote_name: str, name_filter=None):
     query to a single recipe name to keep the payload small. Returns {} for
     non-Artifactory remotes or on any error.
     """
-    conf = _repo_conf(remote_name)
-    if not conf:
-        return {}
-    url = conf.get("url", "")
-    if _CONAN_MARKER not in url:
+    if not _repo_conf(remote_name):
         return {}
 
-    base, repo_key = url.split(_CONAN_MARKER, 1)
-    repo_key = repo_key.strip("/")
-    user, password = conf.get("user"), conf.get("password")
+    # Every remote is a Conan repository on the configured Artifactory host, so
+    # the API base and repo key are known directly rather than parsed back out
+    # of the remote URL.
+    base = config.artifactory_api_base()
+    repo_key = remote_name
+    user, password = credentials.resolve(remote_name)
     auth = (user, password) if user and password else None
 
     # `*` in an AQL path match spans '/', so this covers any user/channel/rrev.

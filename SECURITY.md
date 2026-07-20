@@ -20,6 +20,9 @@ as we work on a fix and coordinate disclosure.
 
 ## Scope
 
-Conan UI stores remote/Artifactory credentials in a `config.json` file that is
-gitignored and must never be committed. If you find credentials or other secrets
-committed to this repository, please report it via the process above.
+Conan UI reads remote/Artifactory credentials from environment variables
+(`CONAN_LOGIN_USERNAME` / `CONAN_PASSWORD`, or their per-remote
+`*_<REMOTE>` variants), typically supplied through a gitignored `.env` file.
+Credentials are never written to disk by the application and never returned by
+the API. If you find credentials or other secrets committed to this repository,
+please report it via the process above.

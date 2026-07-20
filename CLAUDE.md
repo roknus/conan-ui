@@ -45,8 +45,11 @@ cd backend && poetry run ruff format .
 
 ## Config & env vars
 
-- **`config.json` is required to run the backend** — it holds remote/Artifactory credentials and is gitignored. A real one with live credentials exists in the working tree; never echo, log, or commit its contents.
-- `CONAN_UI_CONFIG` — path to config.json (default `/etc/conan-ui/config.json`; VS Code debug points it at `${workspaceFolder}/config.json`).
+**All configuration is environment-based — there is no `config.json`** (it was removed; `backend/config.py` warns if a stale one is found). A real `.env` with live credentials exists in the working tree; never echo, log, or commit its contents.
+
+- `ARTIFACTORY_URL` — Artifactory host, no trailing path (e.g. `https://your-artifactory.com`).
+- `CONAN_REMOTES` — comma-separated Conan repo names on that host. Each URL is derived as `${ARTIFACTORY_URL}/artifactory/api/conan/<name>`; the **first** name is the default remote.
+- `CONAN_LOGIN_USERNAME` / `CONAN_PASSWORD` — remote credentials. These are Conan's own variable names, with per-remote overrides (`CONAN_LOGIN_USERNAME_<REMOTE>`, name upper-cased and `-`→`_`) taking precedence. `backend/credentials.py` mirrors Conan 2.17's `RemoteCredentials._get_env`; keep them in sync if Conan is upgraded.
 - `BACKEND_PORT` (default 8000), `CORS_ORIGINS` (comma-separated, default `http://localhost:3000`), `CONAN_HOME` (optional).
 - Frontend build-time: `REACT_APP_API_URL` (Dockerfile forces `/api` for the nginx proxy).
 
