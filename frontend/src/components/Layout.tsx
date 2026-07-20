@@ -1,6 +1,7 @@
 import React from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import Brand from './Brand';
+import Footer from './Footer';
 import SearchBar from './SearchBar';
 import AdminMenu from './AdminMenu';
 import Dropdown, { DropdownItem } from './Dropdown';
@@ -73,6 +74,7 @@ const Layout: React.FC<LayoutProps> = ({ searchQuery = '', children }) => {
             <main className="App-main">
                 {children}
             </main>
+            <Footer />
         </div>
     );
 };

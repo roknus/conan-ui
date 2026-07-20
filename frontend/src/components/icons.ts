@@ -33,3 +33,4 @@ export const FaCheck = asIcon(Fa.FaCheck);
 export const FaCircleCheck = asIcon(Fa.FaCircleCheck);
 export const FaCircleStop = asIcon(Fa.FaCircleStop);
 export const FaTriangleExclamation = asIcon(Fa.FaTriangleExclamation);
+export const FaGithub = asIcon(Fa.FaGithub);
