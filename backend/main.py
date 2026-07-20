@@ -13,6 +13,7 @@ remote helpers in `conan_client`, request/response models in `schemas`, and the
 endpoints in the `routers` package.
 """
 
+import os
 import logging
 from contextlib import asynccontextmanager
 
@@ -69,10 +70,17 @@ app.include_router(cleanup.router)
 if __name__ == "__main__":
     import uvicorn
 
+    # Auto-reload is a local-dev convenience: uvicorn runs a file-watcher plus a
+    # worker subprocess, so the app (and its startup logging) initializes twice.
+    # Defaults on for `python main.py` during development; the container bakes
+    # source into the image and sets BACKEND_RELOAD=false, so production runs a
+    # single process (and skips a watcher that could never fire on immutable
+    # source).
+    reload = os.getenv("BACKEND_RELOAD", "true").lower() in ("1", "true", "yes")
     uvicorn.run(
         "main:app",
         host=config.BACKEND_HOST,
         port=config.BACKEND_PORT,
-        reload=True,
+        reload=reload,
         log_level="info",
     )

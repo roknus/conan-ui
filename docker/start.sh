@@ -7,6 +7,11 @@ echo "Starting Conan UI Application..."
 export BACKEND_PORT=${BACKEND_PORT:-8000}
 export FRONTEND_PORT=${FRONTEND_PORT:-80}
 
+# Source is baked into the image (not mounted), so uvicorn's auto-reload can
+# never fire here — disable it to run a single process instead of a watcher plus
+# a worker subprocess.
+export BACKEND_RELOAD=false
+
 # Generate nginx configuration from template using envsubst
 echo "Generating nginx configuration from template..."
 envsubst '${BACKEND_PORT},${FRONTEND_PORT}' < /docker/nginx.conf.template > /etc/nginx/nginx.conf
