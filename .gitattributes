@@ -1,0 +1,17 @@
+# Normalize line endings to LF in both the repository and the working tree.
+# This project deploys in Linux containers, so keeping LF everywhere avoids CRLF
+# creeping into container-consumed files such as docker/start.sh (whose CR the
+# Dockerfile otherwise has to strip) and silences core.autocrlf warnings on
+# Windows checkouts.
+* text=auto eol=lf
+
+# Binary assets — never touch these bytes.
+*.png   binary
+*.jpg   binary
+*.jpeg  binary
+*.gif   binary
+*.ico   binary
+*.woff  binary
+*.woff2 binary
+*.ttf   binary
+*.eot   binary
