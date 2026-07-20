@@ -6,7 +6,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 Full-stack web UI for browsing/searching Conan (C/C++ package manager) packages across remotes (Artifactory, conan-center). Python FastAPI backend + React/TypeScript frontend, two apps in one repo (not a workspace/monorepo).
 
-- `backend/` — FastAPI app; all routes live in `backend/main.py`. Uses the Conan Python API directly (no shelling out). Pinned to `conan==2.17.0`.
+- `backend/` — FastAPI app; all routes live in `backend/main.py`. Uses the Conan Python API directly (no shelling out). Pinned to `conan==2.30.0`.
 - `frontend/` — Create React App (react-scripts), React 19 + TypeScript. Not Vite/Tauri/Electron.
 - `docker/` — nginx config + `start.sh` (runs backend + nginx together).
 
